@@ -11,6 +11,7 @@ import { PublicLayout } from "./pub/PublicLayout";
 import { Home } from "./pub/Home";
 import { About, Contact, Doctors, Privacy, Services } from "./pub/Pages";
 import { Book } from "./pub/Book";
+import { Track } from "./pub/Track";
 
 export function App() {
   return (
@@ -22,6 +23,7 @@ export function App() {
         <Route path="/services" element={<Services />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/book" element={<Book />} />
+        <Route path="/track" element={<Track />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="*" element={<Home />} />
       </Route>

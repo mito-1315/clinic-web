@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "../db";
 import { HttpError, parse } from "../http";
+import { getAvailability } from "../availability";
 
 export const publicRouter = Router();
 
@@ -40,6 +41,13 @@ publicRouter.get("/announcements/active", async (_q, res) => {
 publicRouter.get("/settings/public", async (_q, res) => {
   const rows = await prisma.clinicSetting.findMany();
   res.json(Object.fromEntries(rows.map((r) => [r.key, r.value])));
+});
+
+publicRouter.get("/availability", async (req, res) => {
+  const q = parse(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), days: z.coerce.number().int().min(1).max(14).default(1) }), req.query);
+  if (Number.isNaN(new Date(q.date).getTime())) throw new HttpError(400, "VALIDATION_ERROR", "Invalid date");
+  res.set("Cache-Control", "no-store");
+  res.json({ days: await getAvailability(q.date, q.days) });
 });
 
 const apptLimiter = rateLimit({
@@ -84,6 +92,11 @@ publicRouter.post("/appointments", apptLimiter, async (req, res) => {
   if (d.serviceId && !(await prisma.service.findFirst({ where: { id: d.serviceId, isActive: true } }))) {
     throw new HttpError(400, "VALIDATION_ERROR", "Invalid input", [{ path: "serviceId", message: "Unknown service" }]);
   }
+  const [day] = await getAvailability(d.preferredDate, 1);
+  const slot = day.slots.find((x) => x.slot === d.preferredSlot)!;
+  if (!slot.open) {
+    throw new HttpError(409, "SLOT_UNAVAILABLE", slot.status === "full" ? "That time is fully booked. Please choose another." : "The clinic is closed at that time. Please choose another.");
+  }
   const a = await prisma.appointment.create({
     data: {
       refCode: newRefCode(),
@@ -99,4 +112,31 @@ publicRouter.post("/appointments", apptLimiter, async (req, res) => {
     },
   });
   res.status(201).json({ refCode: a.refCode, status: a.status });
+});
+
+const lookupLimiter = rateLimit({
+  windowMs: 60 * 60_000,
+  limit: process.env.NODE_ENV === "test" ? 1000 : 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: () => {
+    throw new HttpError(429, "RATE_LIMITED", "Too many lookups, please try again later");
+  },
+});
+
+/** Public status check: the reference code plus the phone number it was booked with. */
+publicRouter.post("/appointments/lookup", lookupLimiter, async (req, res) => {
+  const { refCode, phone } = parse(
+    z.object({ refCode: z.string().trim().toUpperCase().max(20), phone: z.string().transform((p) => p.replace(/[\s-]/g, "")) }),
+    req.body,
+  );
+  const a = await prisma.appointment.findUnique({ where: { refCode }, include: { service: { select: { title: true } } } });
+  const norm = (p: string) => p.replace(/^\+91/, "");
+  if (!a || norm(a.phone) !== norm(phone)) throw new HttpError(404, "NOT_FOUND", "No request found with that reference code and phone number");
+  res.set("Cache-Control", "no-store");
+  res.json({
+    refCode: a.refCode, status: a.status, patientType: a.patientType, firstName: a.patientName.split(" ")[0],
+    preferredDate: a.preferredDate, preferredSlot: a.preferredSlot, service: a.service?.title ?? null,
+    createdAt: a.createdAt, updatedAt: a.updatedAt,
+  });
 });

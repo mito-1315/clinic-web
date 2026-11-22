@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ErrorBox } from "../admin/ui";
-import { DAYS, hoursLabel, nowIST, useSite } from "./site";
+import { DAYS, hoursLabel, nowIST, openStatus, useSite } from "./site";
 
 export const Section = ({ title, intro, children, tone = "paper", className = "" }: { title?: string; intro?: string; children: ReactNode; tone?: "paper" | "surface" | "brand"; className?: string }) => {
   const bg = tone === "surface" ? "bg-surface" : tone === "brand" ? "bg-brand-600 text-white" : "";
@@ -38,6 +38,11 @@ export const initials = (name: string) =>
   name.replace(/^Dr\.?\s*/i, "").replace(/^Sample\s+/i, "").split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
 export function DoctorCard({ d }: { d: any }) {
+  const { weekly, overrides } = useSite();
+  const status = openStatus(weekly, overrides);
+  const todayName = DAYS[nowIST().weekday];
+  const todayOpen = !!status && !status.text.startsWith("Closed today");
+  const onDuty = todayOpen && (!d.visitingDays || String(d.visitingDays).includes(todayName));
   return (
     <article className="lift group overflow-hidden rounded-3xl border border-line bg-white">
       <div className="zoom relative aspect-[4/3] bg-brand-100">
@@ -49,6 +54,7 @@ export function DoctorCard({ d }: { d: any }) {
           </div>
         )}
         {d.visitingDays && <span className="absolute left-4 top-4 rounded-full bg-sun-100 px-3 py-1 text-xs font-medium text-amber-900">Visits {d.visitingDays}s</span>}
+        {onDuty && <span className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-xs font-medium text-brand-700"><span className="size-2 animate-pulse rounded-full bg-emerald-500" aria-hidden="true" />In clinic today</span>}
       </div>
       <div className="p-6">
         <h3 className="display text-3xl">{d.name}</h3>

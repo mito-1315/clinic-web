@@ -27,7 +27,7 @@ export function Appointments() {
   if (type) qs.set("patientType", type);
   if (date) qs.set("date", date);
   if (dq) qs.set("q", dq);
-  const { data, error, loading, reload } = useApi<{ data: Appt[]; meta: { total: number; totalPages: number } }>(`/admin/appointments?${qs}`);
+  const { data, error, loading, reload } = useApi<{ data: Appt[]; meta: { total: number; totalPages: number } }>(`/admin/appointments?${qs}`, { every: 15_000 });
 
   return (
     <>

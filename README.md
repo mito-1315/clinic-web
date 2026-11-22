@@ -8,6 +8,12 @@ A full-stack demo for a neighbourhood clinic in Kundrathur, Chennai (children an
 
 Full requirements: [docs/SRS.md](docs/SRS.md).
 
+## Live features (API-driven)
+- **Live availability:** `GET /api/v1/availability` feeds the home page "Pick a time" strip and the booking form's Morning/Evening chips (open hours, holidays, per-slot capacity; the API rejects full or closed slots with 409).
+- **Request tracking:** `POST /api/v1/appointments/lookup` powers `/track`, which refreshes itself every few seconds, so a status change made in the admin shows up without reloading.
+- **Admin overview:** auto-refreshing counts, a 7-day chart and a "new request just arrived" alert.
+- **API status chip** in the site footer calls `GET /api/v1/health`.
+
 ## Demo login (fake data only)
 `admin@demo.clinic` / `Demo@12345`
 

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useApi } from "../api";
 import { Collapse, WordReveal, useParallax } from "./motion";
 import { DoctorCard, Fetched, Section } from "./parts";
+import { Availability } from "./live";
 import { DAYS, hoursLabel, nowIST, openStatus, telHref, usePageTitle, useSite, waHref } from "./site";
 
 const FAQ: [string, string][] = [
@@ -11,6 +12,15 @@ const FAQ: [string, string][] = [
   ["When is the skin specialist available?", "A visiting dermatologist consults on Saturdays. Request a Saturday slot or call us to check availability."],
   ["What should I bring?", "Earlier prescriptions or reports if you have them, and a child’s vaccination card for vaccination visits."],
   ["What if it is an emergency?", "Call 108 or go to the nearest hospital immediately. Don’t wait for an appointment."],
+];
+
+const PHOTOS: [string, string][] = [
+  ["smile", "A doctor in teal scrubs smiling while checking a child’s throat"],
+  ["teddy", "A stethoscope held to a teddy bear to put a child at ease"],
+  ["desk", "A doctor at her desk typing consultation notes"],
+  ["throat", "A child having a throat check with a wooden spatula"],
+  ["stetho", "A doctor in teal scrubs holding up a stethoscope"],
+  ["hero", "A nurse’s hands checking a child’s temperature"],
 ];
 
 const STEPS = [
@@ -76,6 +86,7 @@ function ServicesExplorer({ items }: { items: any[] }) {
   const [open, setOpen] = useState<number | null | undefined>(undefined);
   const shown = items.filter((i) => cat === "All" || i.category === cat);
   const active = open === undefined ? shown[0]?.id : open;
+  const activeIdx = Math.max(0, items.findIndex((i) => i.id === active));
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr] lg:gap-16">
@@ -89,6 +100,12 @@ function ServicesExplorer({ items }: { items: any[] }) {
           ))}
         </div>
         <Link to="/services" className="ulink mt-8 inline-block font-medium text-brand-600">All services →</Link>
+        <div className="relative mt-8 hidden aspect-[4/3] overflow-hidden rounded-3xl bg-brand-100 lg:block">
+          {PHOTOS.map(([f, alt], i) => (
+            <img key={f} src={`/photos/${f}-960.jpg`} alt={i === activeIdx % PHOTOS.length ? alt : ""} loading="lazy"
+              className={`absolute inset-0 size-full object-cover transition-all duration-700 ${i === activeIdx % PHOTOS.length ? "scale-100 opacity-100" : "scale-105 opacity-0"}`} />
+          ))}
+        </div>
       </div>
       <ul className="border-t border-line">
         {shown.map((s, i) => {
@@ -105,6 +122,7 @@ function ServicesExplorer({ items }: { items: any[] }) {
               </button>
               <Collapse open={isOpen}>
                 <div className="pb-6 pl-12 pr-2 md:pl-14 md:pr-16">
+                  <img src={`/photos/${PHOTOS[items.indexOf(s) % PHOTOS.length][0]}-500.jpg`} alt="" loading="lazy" className="mb-4 aspect-[16/9] w-full rounded-2xl object-cover lg:hidden" />
                   <p className="max-w-xl text-muted">{s.description}</p>
                   <Link to={`/book?service=${s.id}`} className="btn mt-4">Request this service <span aria-hidden="true">→</span></Link>
                 </div>
@@ -215,6 +233,7 @@ export function Home() {
     <>
       <Hero />
       <Statement />
+      <Section><Availability /></Section>
       <Section tone="surface">
         <Fetched state={services}>{services.data && <ServicesExplorer items={services.data} />}</Fetched>
       </Section>

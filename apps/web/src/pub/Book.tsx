@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ApiError, api, errMsg, useApi } from "../api";
 import { PageHead, Section } from "./parts";
+import { SlotPicker } from "./live";
 import { nowIST, telHref, usePageTitle, useSite, waHref } from "./site";
 
 type Form = { patientName: string; phone: string; patientType: "CHILD" | "ADULT"; age: string; preferredDate: string; preferredSlot: "Morning" | "Evening"; serviceId: string; note: string; consent: boolean; website: string };
@@ -13,7 +14,7 @@ export function Book() {
   const { s } = useSite();
   const services = useApi<any[]>("/services");
   const [params] = useSearchParams();
-  const [f, setF] = useState<Form>({ ...empty, serviceId: params.get("service") ?? "" });
+  const [f, setF] = useState<Form>({ ...empty, serviceId: params.get("service") ?? "", preferredDate: params.get("date") ?? "", preferredSlot: params.get("slot") === "Evening" ? "Evening" : "Morning" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -63,7 +64,8 @@ export function Book() {
           <div className="mt-5 grid gap-2">
             {waHref(s.whatsapp, `Hello, I requested an appointment. Reference: ${done.refCode}`) && <a className="btn" target="_blank" rel="noreferrer" href={waHref(s.whatsapp, `Hello, I requested an appointment. Reference: ${done.refCode}`)}>Message us on WhatsApp</a>}
             {telHref(s.phone) && <a className="btn" href={telHref(s.phone)}>Call the clinic</a>}
-            <Link to="/" className="btn btn-primary">Back to home</Link>
+            <Link to={`/track?ref=${done.refCode}`} className="btn btn-primary">Track this request</Link>
+            <Link to="/" className="btn">Back to home</Link>
           </div>
           <p className="mt-4 text-xs text-muted">Demo site: no real request was made.</p>
         </div>
@@ -106,19 +108,14 @@ export function Book() {
               {err("phone")}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label" htmlFor="preferredDate">Preferred date</label>
-              <input id="preferredDate" className="input" type="date" min={today} value={f.preferredDate} onChange={(e) => set("preferredDate", e.target.value)} {...inv("preferredDate")} />
-              {err("preferredDate")}
-            </div>
-            <div>
-              <label className="label" htmlFor="slot">Time of day</label>
-              <select id="slot" className="input" value={f.preferredSlot} onChange={(e) => set("preferredSlot", e.target.value as Form["preferredSlot"])}>
-                <option>Morning</option>
-                <option>Evening</option>
-              </select>
-            </div>
+          <div>
+            <label className="label" htmlFor="preferredDate">Preferred date</label>
+            <input id="preferredDate" className="input" type="date" min={today} value={f.preferredDate} onChange={(e) => set("preferredDate", e.target.value)} {...inv("preferredDate")} />
+            {err("preferredDate")}
+          </div>
+          <div>
+            <p className="label">Time of day</p>
+            <SlotPicker date={f.preferredDate} value={f.preferredSlot} onChange={(v) => set("preferredSlot", v)} />
           </div>
           <div>
             <label className="label" htmlFor="service">Service (optional)</label>

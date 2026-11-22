@@ -43,7 +43,7 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
 export const errMsg = (e: unknown) =>
   e instanceof ApiError ? (e.details?.length ? e.details.map((d) => `${d.path}: ${d.message}`).join("; ") : e.message) : "Something went wrong";
 
-export function useApi<T = any>(path: string) {
+export function useApi<T = any>(path: string, opts: { every?: number } = {}) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -58,5 +58,11 @@ export function useApi<T = any>(path: string) {
     return () => { live = false; };
   }, [path, tick]);
   const reload = useCallback(() => setTick((t) => t + 1), []);
+  const every = opts.every;
+  useEffect(() => {
+    if (!every) return;
+    const id = setInterval(() => { if (document.visibilityState === "visible") setTick((t) => t + 1); }, every);
+    return () => clearInterval(id);
+  }, [every]);
   return { data, error, loading, reload };
 }

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect } from "react";
 
-export type Timing = { weekday: number; openTime: string | null; closeTime: string | null; isClosed: boolean; note: string | null };
+export type Timing = { weekday: number; openTime: string | null; closeTime: string | null; open2Time?: string | null; close2Time?: string | null; isClosed: boolean; note: string | null };
 export type Override = { id: number; date: string; isClosed: boolean; openTime: string | null; closeTime: string | null; reason: string };
 export type Site = { s: Record<string, string>; weekly: Timing[]; overrides: Override[]; loaded: boolean };
 
@@ -15,8 +15,14 @@ export const fmt12 = (t: string | null) => {
   return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
 };
 
-export const hoursLabel = (t: Timing | undefined) =>
-  !t || t.isClosed || !t.openTime || !t.closeTime ? "Closed" : `${fmt12(t.openTime)} – ${fmt12(t.closeTime)}`;
+type Hours = { isClosed: boolean; openTime: string | null; closeTime: string | null; open2Time?: string | null; close2Time?: string | null };
+export const sessionsOf = (t?: Hours): [string, string][] =>
+  !t || t.isClosed ? [] : ([[t.openTime, t.closeTime], [t.open2Time, t.close2Time]] as const).filter((x): x is readonly [string, string] => !!x[0] && !!x[1]).map((x) => [x[0], x[1]]);
+
+export const hoursLabel = (t: Timing | undefined) => {
+  const s = sessionsOf(t);
+  return s.length ? s.map(([a, b]) => `${fmt12(a)} – ${fmt12(b)}`).join("  ·  ") : "Closed";
+};
 
 /** Current date/time in India, independent of the visitor's device timezone. */
 export function nowIST() {
@@ -33,11 +39,11 @@ export function openStatus(weekly: Timing[], overrides: Override[]): { open: boo
   if (!weekly.length) return null;
   const n = nowIST();
   const o = overrides.find((x) => x.date.slice(0, 10) === n.ymd);
-  const t: Pick<Timing, "isClosed" | "openTime" | "closeTime"> | undefined = o ?? weekly.find((w) => w.weekday === n.weekday);
-  if (!t || t.isClosed || !t.openTime || !t.closeTime) return { open: false, text: o ? `Closed today · ${o.reason}` : "Closed today" };
-  if (n.minutes >= toMin(t.openTime) && n.minutes < toMin(t.closeTime)) return { open: true, text: `Open now · until ${fmt12(t.closeTime)}` };
-  if (n.minutes < toMin(t.openTime)) return { open: false, text: `Opens today at ${fmt12(t.openTime)}` };
-  return { open: false, text: "Closed for today" };
+  const sessions = sessionsOf(o ?? weekly.find((w) => w.weekday === n.weekday));
+  if (!sessions.length) return { open: false, text: o ? `Closed today · ${o.reason}` : "Closed today" };
+  for (const [a, b] of sessions) if (n.minutes >= toMin(a) && n.minutes < toMin(b)) return { open: true, text: `Open now · until ${fmt12(b)}` };
+  const next = sessions.find(([a]) => n.minutes < toMin(a));
+  return next ? { open: false, text: `Opens today at ${fmt12(next[0])}` } : { open: false, text: "Closed for today" };
 }
 
 export const telHref = (phone?: string) => (phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : undefined);

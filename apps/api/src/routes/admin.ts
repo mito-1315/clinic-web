@@ -65,7 +65,13 @@ adminRouter.get("/stats", async (_req, res) => {
   ]);
   const byStatus = { NEW: 0, CONFIRMED: 0, CANCELLED: 0, COMPLETED: 0 } as Record<string, number>;
   for (const g of groups) byStatus[g.status] = g._count;
-  res.json({ total: Object.values(byStatus).reduce((a, b) => a + b, 0), today, byStatus });
+  const since = new Date(startOfDay.getTime() - 6 * 86400000);
+  const recent = await prisma.appointment.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } });
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(since.getTime() + i * 86400000).toISOString().slice(0, 10);
+    return { date: day, count: recent.filter((r) => r.createdAt.toISOString().slice(0, 10) === day).length };
+  });
+  res.json({ total: Object.values(byStatus).reduce((a, b) => a + b, 0), today, byStatus, last7 });
 });
 
 // ---------- Generic CRUD for simple content ----------
@@ -131,6 +137,8 @@ const timingRow = z.object({
   weekday: z.number().int().min(0).max(6),
   openTime: hhmm.nullable().optional(),
   closeTime: hhmm.nullable().optional(),
+  open2Time: hhmm.nullable().optional(),
+  close2Time: hhmm.nullable().optional(),
   isClosed: z.boolean().default(false),
   note: z.string().max(120).nullable().optional(),
 });

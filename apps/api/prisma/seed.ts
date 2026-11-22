@@ -40,7 +40,7 @@ async function main() {
 
   const days = [
     { weekday: 0, isClosed: true, note: "Closed (emergencies by phone)" },
-    ...[1, 2, 3, 4, 5].map((weekday) => ({ weekday, openTime: "09:00", closeTime: "13:00", note: "Morning and 17:00-21:00 evening" })),
+    ...[1, 2, 3, 4, 5].map((weekday) => ({ weekday, openTime: "09:00", closeTime: "13:00", open2Time: "17:00", close2Time: "21:00", note: null as string | null })),
     { weekday: 6, openTime: "09:00", closeTime: "13:00", note: "Skin clinic with visiting dermatologist" },
   ];
   await prisma.timing.deleteMany();
@@ -62,15 +62,30 @@ async function main() {
     await prisma.clinicSetting.upsert({ where: { key }, update: { value }, create: { key, value } });
   }
 
-  const svc = await prisma.service.findFirst();
+  const services = await prisma.service.findMany({ orderBy: { id: "asc" } });
   await prisma.appointment.deleteMany();
-  const d = (n: number) => new Date(Date.now() + n * 86400000);
+  const names: [string, "CHILD" | "ADULT", number][] = [
+    ["Sample Parent A", "CHILD", 4], ["Sample Adult B", "ADULT", 20], ["Sample Parent C", "CHILD", 1], ["Sample Adult D", "ADULT", 34],
+    ["Sample Parent E", "CHILD", 7], ["Sample Adult F", "ADULT", 52], ["Sample Parent G", "CHILD", 2], ["Sample Adult H", "ADULT", 27],
+    ["Sample Parent I", "CHILD", 9], ["Sample Adult J", "ADULT", 41], ["Sample Parent K", "CHILD", 3], ["Sample Adult L", "ADULT", 63],
+    ["Sample Parent M", "CHILD", 6], ["Sample Adult N", "ADULT", 30], ["Sample Parent O", "CHILD", 5], ["Sample Adult P", "ADULT", 22],
+  ];
+  const statuses = ["NEW", "CONFIRMED", "COMPLETED", "NEW", "CONFIRMED", "CANCELLED"] as const;
+  const day = 86400000;
   await prisma.appointment.createMany({
-    data: [
-      { refCode: "LCC-1001", patientName: "Sample Parent A", phone: "9000000001", patientType: "CHILD", age: 4, preferredDate: d(1), preferredSlot: "Morning", serviceId: svc?.id, status: "NEW", consentAt: new Date() },
-      { refCode: "LCC-1002", patientName: "Sample Adult B", phone: "9000000002", patientType: "ADULT", age: 20, preferredDate: d(1), preferredSlot: "Evening", status: "CONFIRMED", consentAt: new Date() },
-      { refCode: "LCC-1003", patientName: "Sample Parent C", phone: "9000000003", patientType: "CHILD", age: 1, preferredDate: d(2), preferredSlot: "Morning", status: "CANCELLED", consentAt: new Date() },
-    ],
+    data: names.map(([patientName, patientType, age], i) => ({
+      refCode: `LCC-${1001 + i}`,
+      patientName,
+      phone: `90000000${String(i + 1).padStart(2, "0")}`,
+      patientType,
+      age,
+      preferredDate: new Date(new Date(Date.now() + ((i % 5) + 1) * day).toISOString().slice(0, 10)),
+      preferredSlot: i % 3 === 0 ? "Evening" : "Morning",
+      serviceId: services[i % services.length].id,
+      status: statuses[i % statuses.length],
+      consentAt: new Date(),
+      createdAt: new Date(Date.now() - Math.floor(i / 2.5) * day - (i % 4) * 3600_000),
+    })),
   });
 }
 

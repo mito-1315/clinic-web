@@ -8,12 +8,13 @@ const app = createApp();
 let token = "";
 const created: string[] = [];
 
+let openDate = "";
 const valid = () => ({
   patientName: "Test Parent",
   phone: "98765 43210",
   patientType: "CHILD",
   age: 3,
-  preferredDate: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10),
+  preferredDate: openDate,
   preferredSlot: "Morning",
   consent: true,
 });
@@ -21,6 +22,8 @@ const valid = () => ({
 beforeAll(async () => {
   const r = await request(app).post("/api/v1/auth/login").send({ email: "admin@demo.clinic", password: "Demo@12345" });
   token = r.body.token;
+  const av = await request(app).get(`/api/v1/availability?date=${new Date(Date.now() + 86400000).toISOString().slice(0, 10)}&days=14`);
+  openDate = av.body.days.find((d: any) => d.slots[0].status === "available").date;
 });
 
 afterAll(async () => {
@@ -55,6 +58,31 @@ describe("public", () => {
     const r = await request(app).post("/api/v1/appointments").send({ ...valid(), website: "spam.com" });
     expect(r.status).toBe(201);
     expect(await prisma.appointment.count()).toBe(before);
+  });
+});
+
+describe("availability and status lookup", () => {
+  it("reports slots per day and closes Sundays", async () => {
+    const r = await request(app).get(`/api/v1/availability?date=${openDate}&days=14`);
+    expect(r.body.days).toHaveLength(14);
+    const sunday = r.body.days.find((d: any) => d.weekday === 0);
+    expect(sunday.closed).toBe(true);
+  });
+
+  it("rejects a request for a closed day", async () => {
+    const av = await request(app).get(`/api/v1/availability?date=${openDate}&days=14`);
+    const sunday = av.body.days.find((d: any) => d.weekday === 0).date;
+    const r = await request(app).post("/api/v1/appointments").send({ ...valid(), preferredDate: sunday });
+    expect(r.status).toBe(409);
+    expect(r.body.error.code).toBe("SLOT_UNAVAILABLE");
+  });
+
+  it("looks up a request only with the right phone", async () => {
+    const ok = await request(app).post("/api/v1/appointments/lookup").send({ refCode: "lcc-1001", phone: "9000000001" });
+    expect(ok.status).toBe(200);
+    expect(ok.body.status).toBeDefined();
+    const bad = await request(app).post("/api/v1/appointments/lookup").send({ refCode: "LCC-1001", phone: "9999999999" });
+    expect(bad.status).toBe(404);
   });
 });
 

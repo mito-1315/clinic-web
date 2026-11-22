@@ -81,6 +81,8 @@ model Timing {
   weekday   Int     @unique // 0 = Sunday
   openTime  String?
   closeTime String?
+  open2Time  String?
+  close2Time String?
   isClosed  Boolean @default(false)
   note      String?
 }

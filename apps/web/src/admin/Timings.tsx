@@ -3,7 +3,7 @@ import { api, errMsg, useApi } from "../api";
 import { ErrorBox, Loading, PageTitle, fmtDate } from "./ui";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-type Row = { weekday: number; openTime: string | null; closeTime: string | null; isClosed: boolean; note: string | null };
+type Row = { weekday: number; openTime: string | null; closeTime: string | null; open2Time: string | null; close2Time: string | null; isClosed: boolean; note: string | null };
 type Override = { id: number; date: string; reason: string; isClosed: boolean };
 
 export function Timings() {
@@ -15,7 +15,7 @@ export function Timings() {
 
   useEffect(() => {
     if (!data) return;
-    setRows(DAYS.map((_, i) => data.weekly.find((w) => w.weekday === i) ?? { weekday: i, openTime: null, closeTime: null, isClosed: true, note: null }));
+    setRows(DAYS.map((_, i) => data.weekly.find((w) => w.weekday === i) ?? { weekday: i, openTime: null, closeTime: null, open2Time: null, close2Time: null, isClosed: true, note: null }));
   }, [data]);
 
   const set = (i: number, patch: Partial<Row>) => setRows(rows.map((r, j) => (i === j ? { ...r, ...patch } : r)));
@@ -25,7 +25,7 @@ export function Timings() {
     try {
       await api("/admin/timings", {
         method: "PUT",
-        body: rows.map((r) => ({ ...r, openTime: r.isClosed ? null : r.openTime || null, closeTime: r.isClosed ? null : r.closeTime || null, note: r.note?.trim() || null })),
+        body: rows.map((r) => ({ ...r, openTime: r.isClosed ? null : r.openTime || null, closeTime: r.isClosed ? null : r.closeTime || null, open2Time: r.isClosed ? null : r.open2Time || null, close2Time: r.isClosed ? null : r.close2Time || null, note: r.note?.trim() || null })),
       });
       setMsg("Saved ✓");
       reload();
@@ -61,6 +61,12 @@ export function Timings() {
               <div className="mt-1 grid grid-cols-2 gap-2">
                 <div><label className="label" htmlFor={`o${i}`}>Opens</label><input id={`o${i}`} className="input" type="time" value={r.openTime ?? ""} onChange={(e) => set(i, { openTime: e.target.value })} /></div>
                 <div><label className="label" htmlFor={`c${i}`}>Closes</label><input id={`c${i}`} className="input" type="time" value={r.closeTime ?? ""} onChange={(e) => set(i, { closeTime: e.target.value })} /></div>
+              </div>
+            )}
+            {!r.isClosed && (
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <div><label className="label" htmlFor={`o2${i}`}>Evening opens</label><input id={`o2${i}`} className="input" type="time" value={r.open2Time ?? ""} onChange={(e) => set(i, { open2Time: e.target.value })} /></div>
+                <div><label className="label" htmlFor={`c2${i}`}>Evening closes</label><input id={`c2${i}`} className="input" type="time" value={r.close2Time ?? ""} onChange={(e) => set(i, { close2Time: e.target.value })} /></div>
               </div>
             )}
             <input className="input mt-2" placeholder="Note (optional)" aria-label={`${DAYS[i]} note`} maxLength={120} value={r.note ?? ""} onChange={(e) => set(i, { note: e.target.value })} />

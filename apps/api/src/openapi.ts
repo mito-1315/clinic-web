@@ -47,7 +47,7 @@ export const openapi = {
       DoctorInput: { type: "object", required: ["name", "role", "qualification", "experienceYears", "bio"], properties: { name: str, role: str, qualification: str, experienceYears: int, bio: str, photoUrl: { type: "string", format: "uri", nullable: true }, visitingDays: { type: "string", nullable: true }, sortOrder: int, isActive: bool } },
       Announcement: { type: "object", properties: { id: int, title: str, body: str, startsAt: { type: "string", format: "date-time" }, endsAt: { type: "string", format: "date-time", nullable: true }, isActive: bool } },
       AnnouncementInput: { type: "object", required: ["title", "body"], properties: { title: str, body: str, startsAt: { type: "string", format: "date-time" }, endsAt: { type: "string", format: "date-time", nullable: true }, isActive: bool } },
-      Timing: { type: "object", required: ["weekday"], properties: { weekday: { type: "integer", minimum: 0, maximum: 6, description: "0 = Sunday" }, openTime: { type: "string", example: "09:00", nullable: true }, closeTime: { type: "string", example: "13:00", nullable: true }, isClosed: bool, note: { type: "string", nullable: true } } },
+      Timing: { type: "object", required: ["weekday"], properties: { weekday: { type: "integer", minimum: 0, maximum: 6, description: "0 = Sunday" }, openTime: { type: "string", example: "09:00", nullable: true }, closeTime: { type: "string", example: "13:00", nullable: true }, open2Time: { type: "string", example: "17:00", nullable: true }, close2Time: { type: "string", example: "21:00", nullable: true }, isClosed: bool, note: { type: "string", nullable: true } } },
       TimingOverride: { type: "object", required: ["date", "reason"], properties: { date: { type: "string", example: "2026-12-25" }, isClosed: bool, openTime: { type: "string", nullable: true }, closeTime: { type: "string", nullable: true }, reason: str } },
       AppointmentInput: {
         type: "object",
@@ -69,12 +69,30 @@ export const openapi = {
     "/timings": { get: { tags: ["Public"], summary: "Weekly timings and upcoming overrides", responses: { 200: ok("OK") } } },
     "/announcements/active": { get: { tags: ["Public"], summary: "Currently active announcements", responses: { 200: ok("OK", arr("Announcement")) } } },
     "/settings/public": { get: { tags: ["Public"], summary: "Clinic contact info", responses: { 200: ok("OK") } } },
+    "/availability": {
+      get: {
+        tags: ["Public"], summary: "Live slot availability (Morning / Evening) per day",
+        description: "Respects weekly timings, holiday closures and a per-slot capacity. Used by the booking form.",
+        parameters: [
+          { name: "date", in: "query", required: true, schema: str, description: "First day, YYYY-MM-DD" },
+          { name: "days", in: "query", schema: { type: "integer", minimum: 1, maximum: 14, default: 1 } },
+        ],
+        responses: { 200: ok("{ days: [{ date, closed, reason, slots: [{ slot, status, booked, capacity, hours }] }] }"), 400: err },
+      },
+    },
+    "/appointments/lookup": {
+      post: {
+        tags: ["Public"], summary: "Check the status of a request",
+        requestBody: body({ type: "object", required: ["refCode", "phone"], properties: { refCode: { type: "string", example: "LCC-1001" }, phone: { type: "string", example: "9000000001" } } }),
+        responses: { 200: ok("Status of the request"), 404: err, 429: err },
+      },
+    },
     "/appointments": {
       post: {
         tags: ["Public"], summary: "Submit an appointment request (not a confirmed booking)",
         description: "Rate limited to 10 per hour per IP.",
         requestBody: body(ref("AppointmentInput")),
-        responses: { 201: ok("Created: returns refCode"), 400: err, 429: err },
+        responses: { 201: ok("Created: returns refCode"), 400: err, 409: ok("Slot closed or full"), 429: err },
       },
     },
     "/auth/login": {

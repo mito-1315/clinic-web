@@ -19,7 +19,7 @@ export function About() {
       <Section tone="surface">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] bg-brand-100">
-            <img ref={img} src="/photos/hero-960.jpg" alt="A nurse’s hands checking a child’s temperature" loading="lazy" className="size-full object-cover" />
+            <img ref={img} src="/photos/smile-960.jpg" alt="A doctor in teal scrubs smiling while checking a child’s throat" loading="lazy" className="size-full object-cover" />
           </div>
           <div>
             <h2 className="display text-4xl md:text-5xl">Recognition and memberships</h2>

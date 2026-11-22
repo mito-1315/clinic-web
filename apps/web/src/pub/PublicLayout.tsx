@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useApi } from "../api";
 import { useScrolled } from "./motion";
+import { ApiStatus } from "./live";
 import { SiteCtx, openStatus, telHref, waHref, type Override, type Timing } from "./site";
 
 export const Logo = ({ className = "size-9" }: { className?: string }) => (
@@ -99,13 +100,13 @@ export function PublicLayout() {
               {status && <p className="mt-3 inline-flex items-center gap-2 text-white/90"><span className={`size-2 rounded-full ${status.open ? "bg-emerald-400" : "bg-white/40"}`} aria-hidden="true" />{status.text}</p>}
             </div>
             <ul className="space-y-2 text-white/80">
-              {[["/", "Home"], ...NAV, ["/book", "Request appointment"], ["/privacy", "Privacy"]].map(([to, label]) => <li key={to}><Link className="ulink" to={to}>{label}</Link></li>)}
+              {[["/", "Home"], ...NAV, ["/book", "Request appointment"], ["/track", "Track a request"], ["/privacy", "Privacy"]].map(([to, label]) => <li key={to}><Link className="ulink" to={to}>{label}</Link></li>)}
             </ul>
             <p className="text-white/75"><span className="font-medium text-white">In an emergency</span><br />Call 108 or go to your nearest hospital. Don’t wait for an appointment reply.</p>
           </div>
           <div className="mt-12 flex flex-col gap-2 border-t border-white/15 pt-6 text-xs text-white/65 md:flex-row md:justify-between">
             <p>Demo website: all names, achievements and details are fictional. · <Link to="/admin" className="ulink">Staff login</Link></p>
-            <p>Photo: Shixart1985, CC BY 2.0, via Wikimedia Commons.</p>
+            <p className="flex flex-col gap-1 md:items-end"><ApiStatus /><span>Photos: Shixart1985, CC BY 2.0, via Wikimedia Commons.</span></p>
           </div>
         </div>
       </footer>
