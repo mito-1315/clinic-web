@@ -1,10 +1,14 @@
 {
   "name": "clinic-web",
   "private": true,
-  "workspaces": ["apps/*"],
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
     "db:up": "docker compose up -d db",
     "db:migrate": "npm run migrate -w apps/api",
-    "db:seed": "npm run seed -w apps/api"
+    "db:seed": "npm run seed -w apps/api",
+    "dev:api": "npm run dev -w apps/api",
+    "dev:web": "npm run dev -w apps/web"
   }
 }
