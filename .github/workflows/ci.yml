@@ -1,0 +1,30 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: clinic, POSTGRES_PASSWORD: clinic_dev_pw, POSTGRES_DB: clinic }
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U clinic" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://clinic:clinic_dev_pw@localhost:5433/clinic?schema=public
+      JWT_SECRET: ci-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
+      - run: npm run seed -w apps/api
+      - run: npm run typecheck -w apps/api
+      - run: npm test -w apps/api
+        env: { NODE_ENV: test }
+      - run: npm run build -w apps/web

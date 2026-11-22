@@ -36,11 +36,13 @@ export function Home() {
       <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 to-cream">
         <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-10 md:grid-cols-[1.2fr_1fr] md:py-20">
           <div>
-            {status && (
-              <p className={`mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold ${status.open ? "bg-brand-100 text-brand-700" : "bg-stone-200 text-stone-700"}`}>
-                <span className={`size-2 rounded-full ${status.open ? "bg-brand-500" : "bg-stone-500"}`} aria-hidden="true" /> {status.text}
-              </p>
-            )}
+            <div className="mb-4 min-h-8">
+              {status && (
+                <p className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold ${status.open ? "bg-brand-100 text-brand-700" : "bg-stone-200 text-stone-700"}`}>
+                  <span className={`size-2 rounded-full ${status.open ? "bg-brand-500" : "bg-stone-500"}`} aria-hidden="true" /> {status.text}
+                </p>
+              )}
+            </div>
             <h1 className="text-4xl font-extrabold leading-tight text-ink md:text-5xl">Caring for your family, <span className="text-brand-600">from first smile to every season.</span></h1>
             <p className="mt-4 max-w-xl text-lg text-stone-600">Lakshmi Child Care Center in Kundrathur, Chennai offers friendly, experienced care for children and adults.</p>
             <div className="mt-6 flex flex-wrap gap-3">

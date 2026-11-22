@@ -195,7 +195,7 @@ Data rules:
 
 | Layer | Choice |
 |---|---|
-| Frontend | React + TypeScript + Vite, React Router, Tailwind CSS, TanStack Query, React Hook Form + Zod |
+| Frontend | React + TypeScript + Vite, React Router, Tailwind CSS (small custom fetch hook and plain forms instead of TanStack Query and React Hook Form, to keep dependencies minimal) |
 | Backend | Node.js, Express, TypeScript, Zod, JWT, bcrypt, Helmet, express-rate-limit, swagger-ui-express |
 | Database | PostgreSQL 16 with Prisma ORM |
 | Local dev | Docker Compose (Postgres), npm workspaces monorepo |

@@ -38,11 +38,14 @@ export function PublicLayout() {
     <SiteCtx.Provider value={site}>
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded-lg focus:bg-white focus:p-3">Skip to content</a>
 
-      {notices.data?.map((n) => (
-        <div key={n.id} className="bg-sun-100 px-4 py-2 text-center text-sm text-amber-900">
-          <b>{n.title}:</b> {n.body}
-        </div>
-      ))}
+      {/* Reserve the banner's height while loading so the page doesn't jump (layout shift). */}
+      <div className={notices.loading ? "min-h-9" : ""}>
+        {notices.data?.map((n) => (
+          <div key={n.id} className="bg-sun-100 px-4 py-2 text-center text-sm text-amber-900">
+            <b>{n.title}:</b> {n.body}
+          </div>
+        ))}
+      </div>
 
       <header className="sticky top-0 z-40 border-b border-stone-200 bg-cream/95 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5">

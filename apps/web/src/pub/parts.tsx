@@ -78,7 +78,7 @@ export function TimingsTable() {
             return (
               <tr key={d} className={`border-b border-stone-100 ${d === today ? "bg-brand-50 font-semibold" : ""}`}>
                 <th scope="row" className="py-2.5 pl-2 pr-3 font-medium">{DAYS[d]}{d === today && <span className="ml-2 text-xs text-brand-700">today</span>}</th>
-                <td className="py-2.5">{hoursLabel(t)}{t?.note && <span className="block text-xs font-normal text-stone-500">{t.note}</span>}</td>
+                <td className="py-2.5">{hoursLabel(t)}{t?.note && <span className="block text-xs font-normal text-stone-600">{t.note}</span>}</td>
               </tr>
             );
           })}

@@ -1,0 +1,14 @@
+# Render blueprint for the API (free plan). The database lives on Neon; set DATABASE_URL in the dashboard.
+services:
+  - type: web
+    name: clinic-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false # your Vercel URL, e.g. https://your-site.vercel.app
