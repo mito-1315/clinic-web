@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ApiError, api, errMsg, useApi } from "../api";
 import { PageHead, Section } from "./parts";
 import { nowIST, telHref, usePageTitle, useSite, waHref } from "./site";
@@ -12,7 +12,8 @@ export function Book() {
   usePageTitle("Request appointment");
   const { s } = useSite();
   const services = useApi<any[]>("/services");
-  const [f, setF] = useState<Form>(empty);
+  const [params] = useSearchParams();
+  const [f, setF] = useState<Form>({ ...empty, serviceId: params.get("service") ?? "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formErr, setFormErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -55,16 +56,16 @@ export function Book() {
       <Section>
         <div className="card mx-auto max-w-lg text-center">
           <p className="mx-auto grid size-14 place-items-center rounded-full bg-brand-100 text-2xl text-brand-700" aria-hidden="true">✓</p>
-          <h1 className="mt-3 text-2xl font-bold text-brand-700">Request received</h1>
-          <p className="mt-2 text-stone-600">Your reference code is</p>
+          <h1 className="display mt-3 text-4xl">Request received</h1>
+          <p className="mt-2 text-muted">Your reference code is</p>
           <p className="my-2 font-mono text-2xl font-bold">{done.refCode}</p>
-          <p className="text-stone-600">This is a <b>request</b>, not a confirmed booking. Our staff will call you on <b>{f.phone}</b> to confirm a time.</p>
+          <p className="text-muted">This is a <b>request</b>, not a confirmed booking. Our staff will call you on <b>{f.phone}</b> to confirm a time.</p>
           <div className="mt-5 grid gap-2">
             {waHref(s.whatsapp, `Hello, I requested an appointment. Reference: ${done.refCode}`) && <a className="btn" target="_blank" rel="noreferrer" href={waHref(s.whatsapp, `Hello, I requested an appointment. Reference: ${done.refCode}`)}>Message us on WhatsApp</a>}
             {telHref(s.phone) && <a className="btn" href={telHref(s.phone)}>Call the clinic</a>}
             <Link to="/" className="btn btn-primary">Back to home</Link>
           </div>
-          <p className="mt-4 text-xs text-stone-500">Demo site: no real request was made.</p>
+          <p className="mt-4 text-xs text-muted">Demo site: no real request was made.</p>
         </div>
       </Section>
     );
@@ -76,9 +77,9 @@ export function Book() {
 
   return (
     <>
-      <PageHead title="Request an appointment" intro="Tell us a little and we’ll call to confirm a time. No medical details needed." />
+      <PageHead title="Request an appointment." intro="Tell us a little and we’ll call to confirm a time. No medical details needed." />
       <Section>
-        <form onSubmit={submit} noValidate className="card mx-auto max-w-lg space-y-5">
+        <form onSubmit={submit} noValidate className="card mx-auto max-w-xl space-y-6 p-6 md:p-9">
           <fieldset>
             <legend className="label">Who is the visit for?</legend>
             <div className="grid grid-cols-2 gap-2">
@@ -129,7 +130,7 @@ export function Book() {
           <div>
             <label className="label" htmlFor="note">Note (optional)</label>
             <textarea id="note" className="input" rows={3} maxLength={300} value={f.note} onChange={(e) => set("note", e.target.value)} />
-            <p className="mt-1 text-xs text-stone-500">Please don’t share medical details here.</p>
+            <p className="mt-1 text-xs text-muted">Please don’t share medical details here.</p>
           </div>
 
           {/* Honeypot: hidden from people, bots fill it in. */}
@@ -140,14 +141,14 @@ export function Book() {
           <div>
             <label className="flex items-start gap-3">
               <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-brand-600" checked={f.consent} onChange={(e) => set("consent", e.target.checked)} {...inv("consent")} />
-              <span className="text-sm text-stone-700">I agree that the clinic may use these details to call me about this request. <Link className="underline" to="/privacy" target="_blank">Privacy</Link></span>
+              <span className="text-sm text-ink">I agree that the clinic may use these details to call me about this request. <Link className="underline" to="/privacy" target="_blank">Privacy</Link></span>
             </label>
             {err("consent")}
           </div>
 
           {formErr && !Object.keys(errors).length && <p className="text-sm text-red-700" role="alert">{formErr}</p>}
           <button className="btn btn-primary min-h-12 w-full text-base" disabled={busy}>{busy ? "Sending…" : "Send request"}</button>
-          <p className="text-center text-xs text-stone-500">For emergencies call 108. Demo site: fictional clinic.</p>
+          <p className="text-center text-xs text-muted">For emergencies call 108. Demo site: fictional clinic.</p>
         </form>
       </Section>
     </>

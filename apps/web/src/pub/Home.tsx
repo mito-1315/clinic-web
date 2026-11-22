@@ -1,112 +1,231 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "../api";
-import { BookCta, DoctorCard, Fetched, Section, ServiceCard, TimingsTable } from "./parts";
-import { openStatus, telHref, usePageTitle, useSite, waHref } from "./site";
+import { Collapse, WordReveal, useParallax } from "./motion";
+import { DoctorCard, Fetched, Section } from "./parts";
+import { DAYS, hoursLabel, nowIST, openStatus, telHref, usePageTitle, useSite, waHref } from "./site";
 
 const FAQ: [string, string][] = [
-  ["Do I need an appointment?", "You can walk in during opening hours. Requesting an appointment helps us plan; our staff will call to confirm a time. Requests are not confirmed bookings until we call you."],
+  ["Do I need an appointment?", "You can walk in during opening hours. Requesting an appointment helps us plan; our staff will call to confirm a time. A request is not a confirmed booking until we call you."],
   ["Do you treat adults as well as children?", "Yes. We care for children and adults: fever, cough, infections, routine check-ups and more."],
-  ["When is the skin specialist available?", "A visiting dermatologist consults on Saturdays. Please request a Saturday slot or call us to check availability."],
-  ["What should I bring?", "Previous prescriptions or reports if you have them, and a child’s vaccination card for vaccination visits."],
-  ["What if it is an emergency?", "Call 108 or go to the nearest hospital immediately. Do not wait for an appointment."],
+  ["When is the skin specialist available?", "A visiting dermatologist consults on Saturdays. Request a Saturday slot or call us to check availability."],
+  ["What should I bring?", "Earlier prescriptions or reports if you have them, and a child’s vaccination card for vaccination visits."],
+  ["What if it is an emergency?", "Call 108 or go to the nearest hospital immediately. Don’t wait for an appointment."],
 ];
 
-const POINTS = [
-  ["Children and adults", "One trusted clinic for the whole family, from newborn check-ups to adult care."],
-  ["Experienced doctors", "Founder-doctors with decades of experience, supported by caring nursing staff."],
-  ["Saturday skin clinic", "A visiting dermatologist every Saturday for skin, hair and nail concerns."],
+const STEPS = [
+  ["Send a request", "Choose a day and time of day in under a minute. We ask only for a name, mobile number, age and a preferred date. No medical history."],
+  ["We call you", "A member of our staff phones to confirm a time that suits you, usually the same day."],
+  ["Come in and be seen", "Walk in, meet the doctor and nurse, and take the time you need. Children are never rushed."],
+  ["Follow-up when needed", "Vaccinations, review visits and the Saturday skin clinic are booked the same way."],
 ];
 
-const TESTIMONIALS = [
-  ["“The doctor was patient with my daughter and explained everything clearly.”", "Sample parent"],
-  ["“I have visited for fever and cough for years. Always friendly and quick.”", "Sample patient"],
-  ["“Vaccination day was calm and stress free for our baby.”", "Sample parent"],
-];
+function Hero() {
+  const { s, weekly, overrides } = useSite();
+  const status = openStatus(weekly, overrides);
+  const img = useParallax<HTMLImageElement>(0.12);
+  const wa = waHref(s.whatsapp);
+  return (
+    <section className="border-b border-line">
+      <div className="mx-auto grid max-w-7xl gap-10 px-5 pb-12 pt-10 md:min-h-[calc(100svh-4rem)] md:grid-cols-[1.15fr_1fr] md:items-center md:gap-14 md:px-8 md:py-14">
+        <div>
+          <p className="enter inline-flex min-h-8 items-center gap-2 rounded-full border border-line bg-white px-3.5 py-1 text-sm" style={{ ["--i" as string]: 0 }}>
+            <span className={`size-2 rounded-full ${status?.open ? "bg-emerald-500" : "bg-stone-400"}`} aria-hidden="true" />
+            {status?.text ?? "Kundrathur, Chennai"}
+          </p>
+          <h1 className="display enter mt-6 text-[clamp(2.9rem,8.2vw,6.6rem)]" style={{ ["--i" as string]: 1 }}>
+            Care for the <em>whole family</em>, close to home.
+          </h1>
+          <p className="enter mt-6 max-w-lg text-lg text-muted md:text-xl" style={{ ["--i" as string]: 2 }}>
+            Children and adults, one trusted clinic in Kundrathur. Two founder-doctors, 30+ years of practice and a Saturday skin clinic.
+          </p>
+          <div className="enter mt-8 flex flex-wrap gap-3" style={{ ["--i" as string]: 3 }}>
+            <Link to="/book" className="btn btn-primary min-h-14 px-7 text-base">Request appointment <span aria-hidden="true">→</span></Link>
+            <a className="btn min-h-14 px-7 text-base" href={telHref(s.phone)}>Call {s.phone ?? "us"}</a>
+            {wa && <a className="btn hidden min-h-14 px-7 text-base sm:inline-flex" href={wa} target="_blank" rel="noreferrer">WhatsApp</a>}
+          </div>
+        </div>
+        <div className="enter" style={{ ["--i" as string]: 2 }}>
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] bg-brand-100 md:aspect-[4/5]">
+            <img ref={img} src="/photos/hero-960.jpg" srcSet="/photos/hero-500.jpg 500w, /photos/hero-960.jpg 960w" sizes="(min-width: 768px) 40vw, 92vw"
+              alt="A nurse in teal scrubs holding a thermometer with a child’s hands" className="size-full object-cover will-change-transform" fetchPriority="high" />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Statement() {
+  return (
+    <section className="bg-paper">
+      <div className="mx-auto max-w-7xl px-5 py-20 md:px-8 md:py-32">
+        <p className="eyebrow">Our approach</p>
+        <WordReveal
+          className="display mt-6 max-w-5xl text-[clamp(2rem,5vw,4.25rem)]"
+          text="A neighbourhood clinic where three decades of experience meet a gentle, unhurried visit. For children, for parents, for grandparents."
+        />
+      </div>
+    </section>
+  );
+}
+
+function ServicesExplorer({ items }: { items: any[] }) {
+  const cats = ["All", ...Array.from(new Set(items.map((i) => i.category as string)))];
+  const [cat, setCat] = useState("All");
+  const [open, setOpen] = useState<number | null | undefined>(undefined);
+  const shown = items.filter((i) => cat === "All" || i.category === cat);
+  const active = open === undefined ? shown[0]?.id : open;
+
+  return (
+    <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr] lg:gap-16">
+      <div className="lg:sticky lg:top-28 lg:self-start">
+        <h2 className="display text-4xl md:text-6xl">Everyday care, <em>every age.</em></h2>
+        <p className="mt-4 max-w-sm text-muted">Pick a group, then open a service to read more.</p>
+        <div className="mt-6 flex flex-wrap gap-2" role="group" aria-label="Filter services">
+          {cats.map((c) => (
+            <button key={c} aria-pressed={cat === c} onClick={() => { setCat(c); setOpen(undefined); }}
+              className={`btn min-h-10 px-4 ${cat === c ? "btn-primary" : ""}`}>{c}</button>
+          ))}
+        </div>
+        <Link to="/services" className="ulink mt-8 inline-block font-medium text-brand-600">All services →</Link>
+      </div>
+      <ul className="border-t border-line">
+        {shown.map((s, i) => {
+          const isOpen = active === s.id;
+          return (
+            <li key={s.id} className="border-b border-line">
+              <button className="group flex w-full items-center gap-4 py-5 text-left md:gap-6 md:py-6" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : s.id)}>
+                <span className="w-8 shrink-0 text-sm tabular-nums text-muted">{String(i + 1).padStart(2, "0")}</span>
+                <span className="flex-1">
+                  <span className={`display block text-2xl transition-transform duration-300 md:text-3xl ${isOpen ? "" : "group-hover:translate-x-1"}`}>{s.title}</span>
+                  <span className="eyebrow mt-1 block">{s.category}</span>
+                </span>
+                <span aria-hidden="true" className={`grid size-10 shrink-0 place-items-center rounded-full border border-line text-xl transition duration-300 ${isOpen ? "rotate-45 border-brand-600 bg-brand-600 text-white" : "group-hover:border-brand-600"}`}>+</span>
+              </button>
+              <Collapse open={isOpen}>
+                <div className="pb-6 pl-12 pr-2 md:pl-14 md:pr-16">
+                  <p className="max-w-xl text-muted">{s.description}</p>
+                  <Link to={`/book?service=${s.id}`} className="btn mt-4">Request this service <span aria-hidden="true">→</span></Link>
+                </div>
+              </Collapse>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function Visit() {
+  const [step, setStep] = useState(0);
+  return (
+    <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+      <div>
+        <h2 className="display text-4xl md:text-6xl">A visit, <em>step by step.</em></h2>
+        <ol className="mt-10 space-y-2">
+          {STEPS.map(([t], i) => (
+            <li key={t}>
+              <button onClick={() => setStep(i)} aria-current={step === i ? "step" : undefined}
+                className={`flex w-full items-center gap-4 rounded-2xl border px-5 py-4 text-left transition duration-200 ${step === i ? "border-brand-600 bg-brand-600 text-white" : "border-line bg-white hover:border-brand-600"}`}>
+                <span className={`grid size-9 shrink-0 place-items-center rounded-full text-sm font-medium ${step === i ? "bg-white text-brand-700" : "bg-brand-100 text-brand-700"}`}>{i + 1}</span>
+                <span className="display text-2xl">{t}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div className="flex flex-col justify-between rounded-3xl bg-surface p-8 md:p-12">
+        <div key={step} className="swap">
+          <span className="display text-[8rem] leading-none text-brand-600/20 md:text-[11rem]" aria-hidden="true">{step + 1}</span>
+          <p className="display -mt-4 text-3xl md:text-4xl">{STEPS[step][0]}</p>
+          <p className="mt-4 max-w-md text-lg text-muted">{STEPS[step][1]}</p>
+        </div>
+        <div className="mt-10 flex h-1.5 gap-1.5" aria-hidden="true">
+          {STEPS.map((_, i) => <span key={i} className={`flex-1 rounded-full transition-colors duration-300 ${i <= step ? "bg-brand-600" : "bg-brand-600/15"}`} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Hours() {
+  const { s, weekly, overrides } = useSite();
+  const today = nowIST().weekday;
+  const [day, setDay] = useState(today);
+  const status = openStatus(weekly, overrides);
+  const t = weekly.find((w) => w.weekday === day);
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  const wa = waHref(s.whatsapp);
+  return (
+    <div className="grid gap-12 lg:grid-cols-[1.3fr_1fr] lg:gap-20">
+      <div>
+        <p className="eyebrow !text-white/70">Opening hours</p>
+        <h2 className="display mt-4 text-4xl md:text-6xl">{day === today ? "Today" : DAYS[day]}</h2>
+        <div className="mt-8 flex flex-wrap gap-2" role="group" aria-label="Choose a day">
+          {order.map((d) => (
+            <button key={d} aria-pressed={day === d} onClick={() => setDay(d)}
+              className={`min-h-11 rounded-full border px-4 text-sm font-medium transition duration-200 active:scale-[0.97] ${day === d ? "border-white bg-white text-brand-700" : "border-white/30 text-white hover:border-white"}`}>
+              {DAYS[d].slice(0, 3)}{d === today && " ·"}
+            </button>
+          ))}
+        </div>
+        <div key={day} className="swap mt-8">
+          <p className="display text-5xl md:text-7xl">{hoursLabel(t)}</p>
+          <p className="mt-3 min-h-6 text-white/75">{day === today && status ? status.text : DAYS[day]}{t?.note ? ` · ${t.note}` : ""}</p>
+        </div>
+      </div>
+      <div className="self-end">
+        <p className="text-white/80">{s.address}</p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <a className="btn btn-light min-h-12" href={telHref(s.phone)}>Call {s.phone}</a>
+          {wa && <a className="btn min-h-12 border-white/40 text-white hover:bg-white/10" href={wa} target="_blank" rel="noreferrer">WhatsApp</a>}
+        </div>
+        <Link to="/contact" className="ulink mt-6 inline-block text-white">Map and directions →</Link>
+      </div>
+    </div>
+  );
+}
+
+function Faq() {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr] lg:gap-16">
+      <h2 className="display text-4xl md:text-6xl">Good <em>questions.</em></h2>
+      <ul className="border-t border-line">
+        {FAQ.map(([q, a], i) => (
+          <li key={q} className="border-b border-line">
+            <button className="flex w-full items-center justify-between gap-6 py-5 text-left" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
+              <span className="display text-xl md:text-2xl">{q}</span>
+              <span aria-hidden="true" className={`grid size-9 shrink-0 place-items-center rounded-full border border-line text-lg transition duration-300 ${open === i ? "rotate-45 border-brand-600 bg-brand-600 text-white" : ""}`}>+</span>
+            </button>
+            <Collapse open={open === i}><p className="max-w-xl pb-6 text-muted">{a}</p></Collapse>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export function Home() {
   usePageTitle("");
-  const { s, weekly, overrides } = useSite();
   const services = useApi<any[]>("/services");
   const doctors = useApi<any[]>("/doctors");
-  const status = openStatus(weekly, overrides);
-  const wa = waHref(s.whatsapp);
-
   return (
     <>
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 to-cream">
-        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-10 md:grid-cols-[1.2fr_1fr] md:py-20">
-          <div>
-            <div className="mb-4 min-h-8">
-              {status && (
-                <p className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold ${status.open ? "bg-brand-100 text-brand-700" : "bg-stone-200 text-stone-700"}`}>
-                  <span className={`size-2 rounded-full ${status.open ? "bg-brand-500" : "bg-stone-500"}`} aria-hidden="true" /> {status.text}
-                </p>
-              )}
-            </div>
-            <h1 className="text-4xl font-extrabold leading-tight text-ink md:text-5xl">Caring for your family, <span className="text-brand-600">from first smile to every season.</span></h1>
-            <p className="mt-4 max-w-xl text-lg text-stone-600">Lakshmi Child Care Center in Kundrathur, Chennai offers friendly, experienced care for children and adults.</p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <BookCta className="min-h-12 px-6 text-base" />
-              <a className="btn min-h-12 px-6 text-base" href={telHref(s.phone)}>Call {s.phone ?? "us"}</a>
-              {wa && <a className="btn min-h-12 px-6 text-base" href={wa} target="_blank" rel="noreferrer">WhatsApp</a>}
-            </div>
-          </div>
-          <div className="hidden md:block" aria-hidden="true">
-            <div className="relative mx-auto grid aspect-square max-w-sm place-items-center rounded-[3rem] bg-brand-100">
-              <div className="absolute -right-3 top-8 rotate-3 rounded-2xl bg-white px-4 py-3 shadow-md"><b className="text-2xl text-brand-700">30+</b><p className="text-xs text-stone-600">years of care</p></div>
-              <div className="absolute -left-3 bottom-12 -rotate-3 rounded-2xl bg-sun-100 px-4 py-3 shadow-md"><b className="text-lg text-amber-800">Saturday</b><p className="text-xs text-stone-700">skin clinic</p></div>
-              <svg viewBox="0 0 48 48" className="size-40 text-brand-600"><path d="M24 40s-14-8.500-14-19a8.200 8.200 0 0 1 14-5.800A8.200 8.200 0 0 1 38 21c0 10.500-14 19-14 19Z" fill="currentColor" /><path d="M24 18v10M19 23h10" stroke="#fff" strokeWidth="3" strokeLinecap="round" /></svg>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <Section>
-        <div className="grid gap-3 md:grid-cols-3">
-          {POINTS.map(([t, d]) => <div key={t} className="card"><h2 className="font-bold text-brand-700">{t}</h2><p className="mt-1 text-sm text-stone-600">{d}</p></div>)}
-        </div>
+      <Hero />
+      <Statement />
+      <Section tone="surface">
+        <Fetched state={services}>{services.data && <ServicesExplorer items={services.data} />}</Fetched>
       </Section>
-
-      <Section title="Our services" intro="Everyday care for every age." tint>
-        <Fetched state={services}>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{services.data?.slice(0, 6).map((x) => <ServiceCard key={x.id} s={x} />)}</div>
-        </Fetched>
-        <Link to="/services" className="btn mt-5">See all services</Link>
-      </Section>
-
-      <Section title="Meet our doctors">
+      <Section title="The people you’ll meet.">
         <Fetched state={doctors}>
-          <div className="grid gap-3 md:grid-cols-2">{doctors.data?.map((d) => <DoctorCard key={d.id} d={d} />)}</div>
+          <div className="grid gap-5 md:grid-cols-3">{doctors.data?.map((d) => <DoctorCard key={d.id} d={d} />)}</div>
         </Fetched>
       </Section>
-
-      <Section title="Visit us" tint>
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="card"><h3 className="mb-2 font-bold">Opening hours</h3><TimingsTable /></div>
-          <div className="card">
-            <h3 className="font-bold">Find us</h3>
-            <p className="mt-2 text-stone-600">{s.address}</p>
-            <Link to="/contact" className="btn mt-4">Map & contact details</Link>
-          </div>
-        </div>
-      </Section>
-
-      <Section title="What families say" intro="Sample testimonials for this demo.">
-        <div className="grid gap-3 md:grid-cols-3">
-          {TESTIMONIALS.map(([q, who]) => <figure key={q} className="card"><blockquote className="text-stone-700">{q}</blockquote><figcaption className="mt-3 text-sm font-medium text-stone-500">{who}</figcaption></figure>)}
-        </div>
-      </Section>
-
-      <Section title="Common questions" tint>
-        <div className="max-w-3xl space-y-2">
-          {FAQ.map(([q, a]) => (
-            <details key={q} className="card group">
-              <summary className="cursor-pointer list-none font-semibold marker:content-none">{q}</summary>
-              <p className="mt-2 text-stone-600">{a}</p>
-            </details>
-          ))}
-        </div>
-      </Section>
+      <Section tone="surface"><Visit /></Section>
+      <Section tone="brand"><Hours /></Section>
+      <Section><Faq /></Section>
     </>
   );
 }

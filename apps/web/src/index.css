@@ -1,33 +1,67 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: #effaf7;
-  --color-brand-100: #d5f2ea;
-  --color-brand-500: #20a58a;
-  --color-brand-600: #0f7a66;
-  --color-brand-700: #0c6454;
-  --color-sun-100: #fff1d6;
-  --color-sun-500: #f4a53a;
-  --color-cream: #fffaf3;
-  --color-ink: #243038;
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Tamil", sans-serif;
+  /* Palette "teal on paper" (made for clinics): one deep teal on an off-white ground, a single warm note. */
+  --color-brand-50: #eef4f3;
+  --color-brand-100: #dbe8e6;
+  --color-brand-500: #2d8591;
+  --color-brand-600: #06525c;
+  --color-brand-700: #043e46;
+  --color-sun-100: #fdf0d0;
+  --color-sun-500: #e8a92f;
+  --color-cream: #f7f9f8;
+  --color-paper: #f7f9f8;
+  --color-surface: #ebf0ee;
+  --color-ink: #0b2f36;
+  --color-muted: #4a666b;
+  --color-line: #d3dfdd;
+  --font-sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Tamil", sans-serif;
+  --font-display: "Newsreader", Georgia, "Times New Roman", serif;
 }
 
-html { -webkit-tap-highlight-color: transparent; }
-body { background: var(--color-cream); color: var(--color-ink); font-size: 16px; }
+html { -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
+body { background: var(--color-paper); color: var(--color-ink); font-size: 17px; line-height: 1.6; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--color-brand-600); color: #fff; }
+
+.display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.025em; line-height: 1.03; }
+.display em { font-style: italic; color: var(--color-brand-500); }
+.eyebrow { font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-muted); }
+
+/* Hero entrance: plays once on load, staggered by --i. */
+@keyframes rise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+.enter { opacity: 0; animation: rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; animation-delay: calc(var(--i, 0) * 110ms + 80ms); }
+@keyframes menuIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.menu-in { opacity: 0; animation: menuIn 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; animation-delay: calc(var(--i, 0) * 60ms + 60ms); }
+@keyframes fadeSwap { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.swap { animation: fadeSwap 0.45s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+/* Hover layer */
+.lift { transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; }
+.lift:hover { transform: translateY(-2px); box-shadow: 0 10px 30px -12px rgb(6 82 92 / 0.25); }
+.zoom { overflow: hidden; }
+.zoom > * { transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.zoom:hover > * { transform: scale(1.03); }
+.ulink { background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: background-size 0.3s ease; }
+.ulink:hover, .ulink:focus-visible { background-size: 100% 1px; }
+
+:focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 3px; }
 
 @layer components {
-  .btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-ink transition active:scale-[0.98] disabled:opacity-50; }
-  .btn:hover { @apply bg-stone-50; }
+  .btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-brand-600/30 bg-transparent px-5 text-sm font-medium text-ink transition duration-200 active:scale-[0.97] disabled:opacity-50; }
+  .btn:hover { @apply border-brand-600 bg-brand-50; }
   .btn-primary { @apply border-brand-600 bg-brand-600 text-white; }
-  .btn-primary:hover { @apply bg-brand-700; }
+  .btn-primary:hover { @apply bg-brand-700 border-brand-700; }
+  .btn-light { @apply border-white bg-white text-brand-700; }
+  .btn-light:hover { @apply bg-brand-50 border-brand-50; }
   .btn-danger { @apply border-red-200 text-red-700; }
-  .input { @apply min-h-11 w-full rounded-xl border border-stone-300 bg-white px-3 text-base text-ink outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100; }
-  textarea.input { @apply py-2; }
-  .card { @apply rounded-2xl border border-stone-200 bg-white p-4 shadow-sm; }
-  .label { @apply mb-1 block text-sm font-medium text-stone-700; }
+  .input { @apply min-h-12 w-full rounded-xl border border-line bg-white px-3.5 text-base text-ink outline-none transition focus:border-brand-600 focus:ring-4 focus:ring-brand-100; }
+  textarea.input { @apply py-2.5; }
+  .card { @apply rounded-2xl border border-line bg-white p-5; }
+  .label { @apply mb-1.5 block text-sm font-medium text-ink; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   * { transition: none !important; animation: none !important; }
+  .enter, .menu-in { opacity: 1; }
 }
