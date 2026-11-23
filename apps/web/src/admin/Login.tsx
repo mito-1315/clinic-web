@@ -3,6 +3,9 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 import { errMsg } from "../api";
 
+// The demo credentials are only shown while developing locally, or on a build that sets VITE_SHOW_DEMO=true.
+const SHOW_DEMO = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEMO === "true";
+
 export function Login() {
   const { user, ready, login } = useAuth();
   const nav = useNavigate();
@@ -30,7 +33,7 @@ export function Login() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center p-5">
       <h1 className="text-2xl font-bold text-brand-700">Clinic admin</h1>
-      <p className="mb-5 text-sm text-stone-600">Lakshmi Child Care Center · demo website</p>
+      <p className="mb-5 text-sm text-stone-600">Lakshmi Child Care Center · staff sign-in</p>
       <form onSubmit={submit} className="card space-y-4">
         <div>
           <label className="label" htmlFor="email">Email</label>
@@ -43,12 +46,12 @@ export function Login() {
         {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
         <button className="btn btn-primary w-full" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
       </form>
-      <div className="mt-4 rounded-2xl bg-sun-100 p-4 text-sm">
+      {SHOW_DEMO && <div className="mt-4 rounded-2xl bg-sun-100 p-4 text-sm">
         <p className="font-semibold">Demo account (fake data only)</p>
         <p className="mt-1">Email: <code>admin@demo.clinic</code></p>
         <p>Password: <code>Demo@12345</code></p>
         <button type="button" className="btn mt-3 min-h-10" onClick={() => { setEmail("admin@demo.clinic"); setPassword("Demo@12345"); }}>Fill demo login</button>
-      </div>
+      </div>}
     </main>
   );
 }

@@ -17,3 +17,5 @@ services:
         value: "true" # the portfolio demo shows its API docs; set to false (or remove) for a real clinic
       - key: CRON_SECRET
         generateValue: true # lets an outside pinger call /api/v1/cron/reminders when the free host sleeps
+      - key: DISABLE_DEMO_LOGIN
+        value: "true" # the public demo login is off; real staff sign in with their own accounts

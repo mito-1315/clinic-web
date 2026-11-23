@@ -155,8 +155,16 @@ every 30 minutes. It also wakes the API and runs the 90-day data cleanup.
 
 - **Update the site:** commit, `git push`. Render and Vercel redeploy automatically. Database changes (migrations) apply at API start.
 - **Roll back:** Render and Vercel both have a "Rollback" button on a previous deploy.
-- **Real admin account:** `npm run admin:create -- owner@clinic.com "Dr. Lakshmi"` (run against the hosted database the same way as step 3, with only `DATABASE_URL`). It prints a random one-time password in your terminal.
-- **Retire the demo login:** set `DISABLE_DEMO_LOGIN=true` on Render. Also set `ENABLE_DOCS=false` and replace the sample photos, names, phone number and testimonials.
+- **Real admin account** (against the hosted database, like step 3):
+  ```powershell
+  $env:DATABASE_URL = "the Neon string"
+  $env:ADMIN_PASSWORD = "a password of your own, 10+ characters"
+  $env:REMOVE_DEMO = "yes"
+  npm run admin:create -- you@example.com "Your Name"
+  Remove-Item Env:DATABASE_URL, Env:ADMIN_PASSWORD, Env:REMOVE_DEMO
+  ```
+  It creates the account, then deletes the public demo account. Change the password later in **Admin → Settings → Change password**.
+- **Retire the demo login:** `DISABLE_DEMO_LOGIN` is already `true` on Render and the sign-in page no longer shows the demo credentials. Also consider `ENABLE_DOCS=false`, and replace the sample photos, names, phone number and testimonials.
 - **Custom domain:** add it in Vercel, then add the new address to `CORS_ORIGIN` on Render.
 
 ## 9. If something goes wrong

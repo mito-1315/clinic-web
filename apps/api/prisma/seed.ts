@@ -12,7 +12,8 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Demo credentials: fake, for the public showcase only.
-  await prisma.adminUser.upsert({
+  // A hosted database gets no public demo login unless SEED_DEMO_ADMIN=yes.
+  if (/localhost|127\.0\.0\.1/.test(url) || process.env.SEED_DEMO_ADMIN === "yes") await prisma.adminUser.upsert({
     where: { email: "admin@demo.clinic" },
     update: {},
     create: {
