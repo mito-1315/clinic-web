@@ -11,6 +11,8 @@ Nothing secret is ever committed. Secrets live only in the Render, Vercel and Ne
 
 ---
 
+> **Using your own accounts instead?** Then you are the owner. Skip section 0 and the "invite a collaborator" steps: sign up to Neon, Render and Vercel with your own GitHub login (`mito-1315`), and everything below works the same. The repository is `https://github.com/mito-1315/clinic-web`.
+
 ## 0. How the owner account works
 
 **One "owner" identity holds everything.** Make a fresh email for it (for example `lakshmi.clinic.demo@gmail.com`) with two-step verification on. Use it to create:
