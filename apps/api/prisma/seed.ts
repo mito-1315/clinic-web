@@ -96,6 +96,7 @@ async function main() {
       preferredSlot: i % 3 === 0 ? "Evening" : "Morning",
       serviceId: services[i % services.length].id,
       status: statuses[i % statuses.length],
+      wantsReminder: false, // sample patients use made-up numbers: they must never receive a real reminder
       consentAt: new Date(),
       createdAt: new Date(Date.now() - Math.floor(i / 2.5) * day - (i % 4) * 3600_000),
     })),
