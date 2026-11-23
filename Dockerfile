@@ -9,5 +9,6 @@ RUN npm ci -w apps/api --omit=dev
 COPY apps/api apps/api
 RUN npx prisma generate --schema apps/api/prisma/schema.prisma
 ENV NODE_ENV=production PORT=4000
+USER node
 EXPOSE 4000
 CMD ["sh", "-c", "npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && npx tsx apps/api/src/index.ts"]

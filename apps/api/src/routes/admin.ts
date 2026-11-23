@@ -1,10 +1,18 @@
 import { Router } from "express";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
+import { notifyStaff, notifyStatus, providers, runReminders, sendReminder } from "../notify";
+import { blockDemoSends, requireAdmin } from "../auth";
 import { prisma } from "../db";
 import { HttpError, intParam, parse } from "../http";
 
+/** A photo is a small uploaded raster image, a site path or an https link. Never a script or SVG. */
+const image = z.string().max(400000).regex(/^(data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+|https:\/\/\S+|\/photos\/[\w.-]+)$/, "Use an uploaded photo or an https link").nullable().optional();
+
 export const adminRouter = Router();
+
+// Least privilege: STAFF handle appointment requests and see the stats; everything that edits the site or the alerts is ADMIN only.
+adminRouter.use(["/services", "/doctors", "/announcements", "/timings", "/timing-overrides", "/settings", "/notifications", "/reminders"], requireAdmin);
 
 // ---------- Appointments ----------
 const listQuery = z.object({
@@ -54,7 +62,38 @@ adminRouter.patch("/appointments/:id", async (req, res) => {
     z.object({ status: z.enum(["NEW", "CONFIRMED", "CANCELLED", "COMPLETED"]).optional(), staffNote: z.string().max(500).nullable().optional() }),
     req.body,
   );
-  res.json(await prisma.appointment.update({ where: { id: intParam(req.params.id) }, data: body }));
+  const id = intParam(req.params.id);
+  const before = await prisma.appointment.findUnique({ where: { id }, select: { status: true } });
+  const a = await prisma.appointment.update({ where: { id }, data: body });
+  if (body.status && before && body.status !== before.status && (body.status === "CONFIRMED" || body.status === "CANCELLED") && !(process.env.NODE_ENV === "production" && res.locals.user?.isDemo)) {
+    void notifyStatus(a, body.status).catch(() => {});
+  }
+  res.json(a);
+});
+
+adminRouter.post("/appointments/:id/remind", async (req, res) => {
+  blockDemoSends(res);
+  const a = await prisma.appointment.findUnique({ where: { id: intParam(req.params.id) } });
+  if (!a) throw new HttpError(404, "NOT_FOUND", "Appointment not found");
+  await sendReminder(a);
+  res.json({ ok: true });
+});
+
+// ---------- Notifications ----------
+adminRouter.get("/notifications", async (_q, res) => {
+  const [rows, s] = await Promise.all([prisma.notification.findMany({ orderBy: { createdAt: "desc" }, take: 60 }), Promise.resolve(providers())]);
+  res.json({ providers: s, data: rows });
+});
+
+adminRouter.post("/notifications/test", async (_q, res) => {
+  blockDemoSends(res);
+  const n = await notifyStaff("Test notification", "Test message from the clinic admin: notifications are working.", { kind: "TEST" });
+  res.json({ channels: n });
+});
+
+adminRouter.post("/reminders/run", async (_q, res) => {
+  blockDemoSends(res);
+  res.json({ sent: await runReminders() });
 });
 
 adminRouter.get("/stats", async (_req, res) => {
@@ -95,6 +134,7 @@ crud(
     title: z.string().trim().min(2).max(100),
     description: z.string().trim().min(1).max(500),
     category: z.string().trim().min(1).max(50),
+    imageUrl: image,
     sortOrder: z.number().int().default(0),
     isActive: z.boolean().default(true),
   }),
@@ -110,7 +150,7 @@ crud(
     qualification: z.string().trim().min(1).max(150),
     experienceYears: z.number().int().min(0).max(80),
     bio: z.string().trim().min(1).max(800),
-    photoUrl: z.string().url().nullable().optional(),
+    photoUrl: image,
     visitingDays: z.string().max(60).nullable().optional(),
     sortOrder: z.number().int().default(0),
     isActive: z.boolean().default(true),
@@ -174,6 +214,11 @@ const settingsSchema = z
     email: z.string().email(),
     address: z.string().max(250),
     mapUrl: z.string().url(),
+    notifyPhone: z.string().regex(/^\+?\d{10,15}$/, "Digits only, 10-15 long"),
+    notifyEmail: z.string().email(),
+    notifyWhatsApp: z.enum(["on", "off"]),
+    notifyEmailOn: z.enum(["on", "off"]),
+    remindersOn: z.enum(["on", "off"]),
   })
   .partial()
   .strict();
@@ -185,6 +230,7 @@ adminRouter.get("/settings", async (_q, res) => {
 
 adminRouter.put("/settings", async (req, res) => {
   const d = parse(settingsSchema, req.body);
+  if (Object.keys(d).some((k) => k.startsWith("notify"))) blockDemoSends(res); // alert targets decide who the server messages
   await prisma.$transaction(
     Object.entries(d).map(([key, value]) => prisma.clinicSetting.upsert({ where: { key }, update: { value: value! }, create: { key, value: value! } })),
   );

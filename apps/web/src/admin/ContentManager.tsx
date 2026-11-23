@@ -5,7 +5,7 @@ import { ErrorBox, Loading, PageTitle, Sheet } from "./ui";
 export type Field = {
   key: string;
   label: string;
-  type: "text" | "textarea" | "number" | "bool" | "datetime" | "url";
+  type: "text" | "textarea" | "number" | "bool" | "datetime" | "url" | "image";
   nullable?: boolean;
   hint?: string;
 };
@@ -18,6 +18,16 @@ export type ManagerConfig = {
   itemSub: (r: any) => string;
   defaults: Record<string, any>;
 };
+
+/** Shrinks a chosen photo to a small JPEG data URL so it can be stored with the record. */
+async function shrink(file: File, max = 800): Promise<string> {
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.78);
+}
 
 const toLocalInput = (iso?: string | null) => {
   if (!iso) return "";
@@ -105,7 +115,22 @@ function Editor({ title, endpoint, fields, defaults, row, onClose, onDone }: {
             ) : (
               <>
                 <label className="label" htmlFor={f.key}>{f.label}</label>
-                {f.type === "textarea" ? (
+                {f.type === "image" ? (
+                  <div className="flex items-center gap-3">
+                    {form[f.key] ? <img src={form[f.key]} alt="" className="size-20 rounded-xl object-cover" /> : <span className="grid size-20 place-items-center rounded-xl bg-surface text-xs text-muted">No photo</span>}
+                    <div className="flex flex-col gap-2">
+                      <label className="btn min-h-10 cursor-pointer">
+                        {form[f.key] ? "Change photo" : "Upload photo"}
+                        <input id={f.key} type="file" accept="image/*" className="sr-only" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try { setForm({ ...form, [f.key]: await shrink(file) }); setErr(""); } catch { setErr("That file could not be read as an image."); }
+                        }} />
+                      </label>
+                      {form[f.key] && <button type="button" className="btn btn-danger min-h-10" onClick={() => setForm({ ...form, [f.key]: "" })}>Remove</button>}
+                    </div>
+                  </div>
+                ) : f.type === "textarea" ? (
                   <textarea id={f.key} className="input" rows={4} value={form[f.key]} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} />
                 ) : (
                   <input id={f.key} className="input" value={form[f.key]}

@@ -1,9 +1,10 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { randomBytes } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "../db";
 import { HttpError, parse } from "../http";
+import { notifyNewRequest, purgeOldData, runReminders } from "../notify";
 import { getAvailability } from "../availability";
 
 export const publicRouter = Router();
@@ -60,6 +61,17 @@ const apptLimiter = rateLimit({
   },
 });
 
+const dayLimiter = rateLimit({
+  windowMs: 24 * 60 * 60_000,
+  limit: process.env.NODE_ENV === "test" ? 1000 : 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: () => {
+    throw new HttpError(429, "RATE_LIMITED", "Too many requests today, please call the clinic instead");
+  },
+});
+const MAX_OPEN_PER_PHONE = 3;
+
 export const appointmentInput = z.object({
   patientName: z.string().trim().min(2).max(80),
   phone: z
@@ -72,13 +84,14 @@ export const appointmentInput = z.object({
   preferredSlot: z.enum(["Morning", "Evening"]),
   serviceId: z.number().int().positive().optional(),
   note: z.string().trim().max(300).optional(),
+  wantsReminder: z.boolean().default(true),
   consent: z.literal(true, { errorMap: () => ({ message: "Consent is required" }) }),
   website: z.string().optional(), // honeypot: real users leave this empty
 });
 
 const newRefCode = () => "LCC-" + randomBytes(4).toString("hex").slice(0, 6).toUpperCase();
 
-publicRouter.post("/appointments", apptLimiter, async (req, res) => {
+publicRouter.post("/appointments", apptLimiter, dayLimiter, async (req, res) => {
   const d = parse(appointmentInput, req.body);
   if (d.website) {
     // bot: pretend success, store nothing
@@ -91,6 +104,18 @@ publicRouter.post("/appointments", apptLimiter, async (req, res) => {
   }
   if (d.serviceId && !(await prisma.service.findFirst({ where: { id: d.serviceId, isActive: true } }))) {
     throw new HttpError(400, "VALIDATION_ERROR", "Invalid input", [{ path: "serviceId", message: "Unknown service" }]);
+  }
+  // Stops one number from blocking slots: one open request per day, and a few open requests in total.
+  const digits = d.phone.replace(/^\+91/, "");
+  const open = await prisma.appointment.findMany({
+    where: { phone: { in: [digits, `+91${digits}`] }, status: { in: ["NEW", "CONFIRMED"] }, preferredDate: { gte: todayUtc() } },
+    select: { preferredDate: true },
+  });
+  if (open.some((o) => o.preferredDate.getTime() === date.getTime())) {
+    throw new HttpError(409, "DUPLICATE_REQUEST", "You already have a request for that day. Please call the clinic to change it.");
+  }
+  if (open.length >= MAX_OPEN_PER_PHONE) {
+    throw new HttpError(429, "TOO_MANY_OPEN", `This number already has ${MAX_OPEN_PER_PHONE} open requests. Please call the clinic.`);
   }
   const [day] = await getAvailability(d.preferredDate, 1);
   const slot = day.slots.find((x) => x.slot === d.preferredSlot)!;
@@ -108,10 +133,23 @@ publicRouter.post("/appointments", apptLimiter, async (req, res) => {
       preferredSlot: d.preferredSlot,
       serviceId: d.serviceId,
       note: d.note || null,
+      wantsReminder: d.wantsReminder,
       consentAt: new Date(),
     },
   });
+  const svc = d.serviceId ? await prisma.service.findUnique({ where: { id: d.serviceId }, select: { title: true } }) : null;
+  void notifyNewRequest(a, svc?.title).catch(() => {});
   res.status(201).json({ refCode: a.refCode, status: a.status });
+});
+
+/** For an external pinger (e.g. cron-job.org) when the host sleeps: GET /cron/reminders with header x-cron-key = CRON_SECRET. */
+publicRouter.get("/cron/reminders", async (req, res) => {
+  const key = process.env.CRON_SECRET;
+  const given = Buffer.from(req.header("x-cron-key") ?? "");
+  if (!key || given.length !== Buffer.byteLength(key) || !timingSafeEqual(given, Buffer.from(key))) throw new HttpError(401, "UNAUTHORIZED", "Invalid key");
+  const sent = await runReminders();
+  await purgeOldData();
+  res.json({ sent });
 });
 
 const lookupLimiter = rateLimit({

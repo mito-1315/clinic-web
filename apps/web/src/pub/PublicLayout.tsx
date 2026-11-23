@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useApi } from "../api";
-import { useScrolled } from "./motion";
+import { useParallaxLayers, useScrolled } from "./motion";
 import { ApiStatus } from "./live";
 import { SiteCtx, openStatus, telHref, waHref, type Override, type Timing } from "./site";
 
@@ -16,6 +16,7 @@ const NAV = [["/about", "About"], ["/doctors", "Doctors"], ["/services", "Servic
 
 export function PublicLayout() {
   const { pathname } = useLocation();
+  useParallaxLayers(pathname);
   const [menu, setMenu] = useState(false);
   const scrolled = useScrolled(12);
   const settings = useApi<Record<string, string>>("/settings/public");
@@ -92,7 +93,7 @@ export function PublicLayout() {
 
       <footer className="bg-brand-700 text-white">
         <div className="mx-auto max-w-7xl px-5 py-14 md:px-8 md:py-20">
-          <p className="display max-w-3xl text-4xl md:text-6xl">Come in when you’re ready. <em style={{ color: "#a9d3d6" }}>We’ll take it from there.</em></p>
+          <p className="display max-w-3xl text-4xl md:text-6xl">Come in when you’re ready. <em style={{ color: "#e3b59d" }}>We’ll take it from there.</em></p>
           <div className="mt-12 grid gap-10 border-t border-white/15 pt-10 text-[15px] md:grid-cols-4">
             <div className="md:col-span-2">
               <p className="font-medium">{name}</p>

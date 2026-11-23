@@ -3,11 +3,13 @@ import { useCallback, useEffect, useState } from "react";
 const BASE = ((import.meta.env.VITE_API_URL as string | undefined) ?? "") + "/api/v1";
 const KEY = "clinic_token";
 
+// The login token lives in sessionStorage: it is gone when the tab closes and is never shared between tabs or left on disk.
 export const getToken = () => {
-  try { return localStorage.getItem(KEY); } catch { return null; }
+  try { localStorage.removeItem(KEY); } catch { /* ignore */ } // clear tokens saved by older versions
+  try { return sessionStorage.getItem(KEY); } catch { return null; }
 };
 export const setToken = (t: string | null) => {
-  try { t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY); } catch { /* storage blocked */ }
+  try { t ? sessionStorage.setItem(KEY, t) : sessionStorage.removeItem(KEY); } catch { /* storage blocked */ }
 };
 
 export class ApiError extends Error {

@@ -10,6 +10,7 @@
     "test": "vitest run",
     "migrate": "prisma migrate dev",
     "deploy": "prisma migrate deploy",
+    "admin:create": "tsx scripts/create-admin.ts",
     "seed": "tsx prisma/seed.ts"
   },
   "prisma": {

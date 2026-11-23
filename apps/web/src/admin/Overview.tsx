@@ -32,7 +32,7 @@ export function Overview() {
   const tiles: [string, number, string][] = [
     ["New requests", s.byStatus.NEW, "bg-sun-100"],
     ["Confirmed", s.byStatus.CONFIRMED, "bg-brand-100"],
-    ["Completed", s.byStatus.COMPLETED, "bg-sky-100"],
+    ["Completed", s.byStatus.COMPLETED, "bg-surface"],
     ["Received today", s.today, "bg-surface"],
   ];
 
@@ -55,7 +55,7 @@ export function Overview() {
         {s.last7.map((d) => (
           <div key={d.date} className="flex flex-1 flex-col items-center justify-end gap-1">
             <span className="text-xs tabular-nums text-muted">{d.count}</span>
-            <div className="w-full rounded-t-lg bg-brand-600 transition-[height] duration-700" style={{ height: `${(d.count / max) * 100}%`, minHeight: 4, opacity: d.count ? 1 : 0.2 }} />
+            <div className="w-full rounded-t-lg bg-clay-500 transition-[height,background-color] hover:bg-clay-600 duration-700" style={{ height: `${(d.count / max) * 100}%`, minHeight: 4, opacity: d.count ? 1 : 0.2 }} />
             <span className="text-xs text-muted">{new Date(d.date).toLocaleDateString("en-IN", { weekday: "short", timeZone: "UTC" })}</span>
           </div>
         ))}

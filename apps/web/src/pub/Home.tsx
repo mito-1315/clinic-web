@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "../api";
-import { Collapse, WordReveal, useParallax } from "./motion";
-import { DoctorCard, Fetched, Section } from "./parts";
+import { Collapse, WordReveal, useParallax, useTilt } from "./motion";
+import { DoctorCard, Fetched, Rail, Section } from "./parts";
 import { Availability } from "./live";
 import { DAYS, hoursLabel, nowIST, openStatus, telHref, usePageTitle, useSite, waHref } from "./site";
 
@@ -34,35 +34,121 @@ function Hero() {
   const { s, weekly, overrides } = useSite();
   const status = openStatus(weekly, overrides);
   const img = useParallax<HTMLImageElement>(0.12);
+  const tilt = useTilt<HTMLDivElement>(5);
   const wa = waHref(s.whatsapp);
+  const box = useRef<HTMLDivElement>(null);
+  const move = (e: React.PointerEvent) => {
+    const el = box.current;
+    if (!el || e.pointerType !== "mouse") return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--mx", String((e.clientX - r.left) / r.width - 0.5));
+    el.style.setProperty("--my", String((e.clientY - r.top) / r.height - 0.5));
+  };
   return (
-    <section className="border-b border-line">
-      <div className="mx-auto grid max-w-7xl gap-10 px-5 pb-12 pt-10 md:min-h-[calc(100svh-4rem)] md:grid-cols-[1.15fr_1fr] md:items-center md:gap-14 md:px-8 md:py-14">
-        <div>
-          <p className="enter inline-flex min-h-8 items-center gap-2 rounded-full border border-line bg-white px-3.5 py-1 text-sm" style={{ ["--i" as string]: 0 }}>
-            <span className={`size-2 rounded-full ${status?.open ? "bg-emerald-500" : "bg-stone-400"}`} aria-hidden="true" />
-            {status?.text ?? "Kundrathur, Chennai"}
-          </p>
-          <h1 className="display enter mt-6 text-[clamp(2.9rem,8.2vw,6.6rem)]" style={{ ["--i" as string]: 1 }}>
-            Care for the <em>whole family</em>, close to home.
-          </h1>
-          <p className="enter mt-6 max-w-lg text-lg text-muted md:text-xl" style={{ ["--i" as string]: 2 }}>
-            Children and adults, one trusted clinic in Kundrathur. Two founder-doctors, 30+ years of practice and a Saturday skin clinic.
-          </p>
-          <div className="enter mt-8 flex flex-wrap gap-3" style={{ ["--i" as string]: 3 }}>
-            <Link to="/book" className="btn btn-primary min-h-14 px-7 text-base">Request appointment <span aria-hidden="true">→</span></Link>
-            <a className="btn min-h-14 px-7 text-base" href={telHref(s.phone)}>Call {s.phone ?? "us"}</a>
-            {wa && <a className="btn hidden min-h-14 px-7 text-base sm:inline-flex" href={wa} target="_blank" rel="noreferrer">WhatsApp</a>}
+    <section className="px-3 pt-3 md:px-5 md:pt-4">
+      <div ref={box} onPointerMove={move} className="relative mx-auto max-w-[96rem] overflow-hidden rounded-[2rem] bg-brand-700 shadow-[0_30px_70px_-30px_rgb(31_38_28/0.6)] md:min-h-[calc(100svh-6.5rem)]">
+        <img ref={img} src="/photos/hero-960.jpg" srcSet="/photos/hero-500.jpg 500w, /photos/hero-960.jpg 960w" sizes="100vw" style={{ scale: 1.14 }}
+          alt="A nurse in teal scrubs holding a thermometer with a child’s hands" className="absolute inset-0 size-full object-cover will-change-transform" fetchPriority="high" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1f261c]/90 via-[#1f261c]/55 to-[#1f261c]/20 md:bg-gradient-to-r md:from-[#1f261c]/90 md:via-[#1f261c]/55 md:to-transparent" />
+        <div className="blob -left-16 top-1/3 size-72 bg-clay-500" style={{ ["--k" as string]: "-50px" }} aria-hidden="true" />
+        <div className="blob -bottom-20 right-1/4 size-80 bg-brand-500" style={{ ["--k" as string]: "60px" }} aria-hidden="true" />
+        <div className="relative grid gap-10 p-6 pb-10 pt-40 text-white md:min-h-[calc(100svh-6.5rem)] md:grid-cols-[1.3fr_1fr] md:items-center md:gap-12 md:p-14">
+          <div>
+            <p className="enter glass-dark inline-flex min-h-8 items-center gap-2 rounded-full px-3.5 py-1 text-sm" style={{ ["--i" as string]: 0 }}>
+              <span className={`size-2 rounded-full ${status?.open ? "animate-pulse bg-emerald-400" : "bg-stone-300"}`} aria-hidden="true" />
+              {status?.text ?? "Kundrathur, Chennai"}
+            </p>
+            <h1 className="display enter mt-6 text-[clamp(2.9rem,7.4vw,6.2rem)]" style={{ ["--i" as string]: 1 }}>
+              Care for the <em style={{ color: "#f0b392" }}>whole family</em>, close to home.
+            </h1>
+            <p className="enter mt-6 max-w-lg text-lg text-white/85 md:text-xl" style={{ ["--i" as string]: 2 }}>
+              Children and adults, one trusted clinic in Kundrathur. Two founder-doctors, 30+ years of practice and a Saturday skin clinic.
+            </p>
+            <div className="enter mt-8 flex flex-wrap gap-3" style={{ ["--i" as string]: 3 }}>
+              <Link to="/book" className="btn btn-light min-h-14 px-7 text-base">Request appointment <span className="arrow" aria-hidden="true">→</span></Link>
+              <a className="btn min-h-14 border-white/50 px-7 text-base text-white hover:bg-white/10" href={telHref(s.phone)}>Call {s.phone ?? "us"}</a>
+            </div>
           </div>
-        </div>
-        <div className="enter" style={{ ["--i" as string]: 2 }}>
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] bg-brand-100 md:aspect-[4/5]">
-            <img ref={img} src="/photos/hero-960.jpg" srcSet="/photos/hero-500.jpg 500w, /photos/hero-960.jpg 960w" sizes="(min-width: 768px) 40vw, 92vw"
-              alt="A nurse in teal scrubs holding a thermometer with a child’s hands" className="size-full object-cover will-change-transform" fetchPriority="high" />
+          <div className="enter hidden md:block" style={{ ["--i" as string]: 3 }}>
+            <div {...tilt} className="tilt glass rounded-3xl p-7 text-ink">
+              <p className="eyebrow">Plan your visit</p>
+              <p className="display float-3d mt-2 text-4xl">Pick a time of day</p>
+              <p className="mt-2 text-sm text-muted">Requests take under a minute. We call to confirm.</p>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <Link to="/book?slot=Morning" className="btn btn-primary">Morning <span className="arrow" aria-hidden="true">→</span></Link>
+                <Link to="/book?slot=Evening" className="btn bg-white/70">Evening <span className="arrow" aria-hidden="true">→</span></Link>
+              </div>
+              {wa && <a className="ulink mt-5 inline-block text-sm font-medium text-brand-700" href={wa} target="_blank" rel="noreferrer">Prefer WhatsApp? Message us</a>}
+            </div>
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+const QUOTES: [string, string][] = [
+  ["My son was scared of doctors. Here he walked out with a sticker and a smile.", "Parent of a 5-year-old"],
+  ["The same clinic looked after me as a child and now looks after my kids.", "Local resident"],
+  ["No rush, no jargon. They explained everything and told us what not to worry about.", "Parent, Kundrathur"],
+  ["Evening hours make it possible to come after work. Booking was simple.", "Working parent"],
+];
+
+function Testimonials() {
+  const rail = useRef<HTMLDivElement>(null);
+  const go = (d: number) => rail.current?.scrollBy({ left: d * 360, behavior: "smooth" });
+  return (
+    <div>
+      <div className="flex items-end justify-between gap-6">
+        <h2 className="display text-4xl md:text-6xl">Kind <em>words.</em></h2>
+        <div className="flex gap-2">
+          <button className="btn size-12 !px-0" aria-label="Previous" onClick={() => go(-1)}>←</button>
+          <button className="btn size-12 !px-0" aria-label="Next" onClick={() => go(1)}>→</button>
+        </div>
+      </div>
+      
+      <div ref={rail} className="rail mt-8" tabIndex={0} aria-label="Patient feedback, scrollable">
+        {QUOTES.map(([q, who], i) => (
+          <figure key={q} className="lift flex flex-col justify-between rounded-3xl border border-line bg-white p-7">
+            <span className="display text-6xl leading-none text-clay-500" aria-hidden="true">“</span>
+            <blockquote className="display -mt-4 text-2xl">{q}</blockquote>
+            <figcaption className="mt-8 flex items-center gap-3 text-sm text-muted"><span className="grid size-9 place-items-center rounded-full bg-brand-100 text-brand-700">{i + 1}</span>{who}</figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ServiceGallery({ items }: { items: any[] }) {
+  const rail = useRef<HTMLDivElement>(null);
+  const go = (d: number) => rail.current?.scrollBy({ left: d * 360, behavior: "smooth" });
+  return (
+    <div>
+      <div className="flex items-end justify-between gap-6">
+        <h2 className="display text-4xl md:text-6xl">Everyday care, <em>every age.</em></h2>
+        <div className="flex gap-2">
+          <button className="btn size-12 !px-0" aria-label="Previous services" onClick={() => go(-1)}>←</button>
+          <button className="btn size-12 !px-0" aria-label="Next services" onClick={() => go(1)}>→</button>
+        </div>
+      </div>
+      <p className="mt-3 max-w-md text-muted">Swipe or use the arrows. Choose a service to request it.</p>
+      <div ref={rail} className="rail mt-8" tabIndex={0} aria-label="Services, scrollable">
+        {items.map((s, i) => (
+          <Link key={s.id} to={`/book?service=${s.id}`} className="lift group flex flex-col overflow-hidden rounded-3xl border border-line bg-white">
+            <div className="zoom relative aspect-[4/3] overflow-hidden bg-brand-100">
+              <img src={s.imageUrl || `/photos/${PHOTOS[i % PHOTOS.length][0]}-500.jpg`} alt="" loading="lazy" className="size-full object-cover" />
+              <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-brand-700">{s.category}</span>
+            </div>
+            <div className="flex flex-1 flex-col p-5">
+              <h3 className="display text-2xl">{s.title}</h3>
+              <p className="mt-2 text-[15px] text-muted">{s.description}</p>
+              <span className="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-medium text-brand-600">Request this <span className="arrow" aria-hidden="true">→</span></span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -77,61 +163,6 @@ function Statement() {
         />
       </div>
     </section>
-  );
-}
-
-function ServicesExplorer({ items }: { items: any[] }) {
-  const cats = ["All", ...Array.from(new Set(items.map((i) => i.category as string)))];
-  const [cat, setCat] = useState("All");
-  const [open, setOpen] = useState<number | null | undefined>(undefined);
-  const shown = items.filter((i) => cat === "All" || i.category === cat);
-  const active = open === undefined ? shown[0]?.id : open;
-  const activeIdx = Math.max(0, items.findIndex((i) => i.id === active));
-
-  return (
-    <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr] lg:gap-16">
-      <div className="lg:sticky lg:top-28 lg:self-start">
-        <h2 className="display text-4xl md:text-6xl">Everyday care, <em>every age.</em></h2>
-        <p className="mt-4 max-w-sm text-muted">Pick a group, then open a service to read more.</p>
-        <div className="mt-6 flex flex-wrap gap-2" role="group" aria-label="Filter services">
-          {cats.map((c) => (
-            <button key={c} aria-pressed={cat === c} onClick={() => { setCat(c); setOpen(undefined); }}
-              className={`btn min-h-10 px-4 ${cat === c ? "btn-primary" : ""}`}>{c}</button>
-          ))}
-        </div>
-        <Link to="/services" className="ulink mt-8 inline-block font-medium text-brand-600">All services →</Link>
-        <div className="relative mt-8 hidden aspect-[4/3] overflow-hidden rounded-3xl bg-brand-100 lg:block">
-          {PHOTOS.map(([f, alt], i) => (
-            <img key={f} src={`/photos/${f}-960.jpg`} alt={i === activeIdx % PHOTOS.length ? alt : ""} loading="lazy"
-              className={`absolute inset-0 size-full object-cover transition-all duration-700 ${i === activeIdx % PHOTOS.length ? "scale-100 opacity-100" : "scale-105 opacity-0"}`} />
-          ))}
-        </div>
-      </div>
-      <ul className="border-t border-line">
-        {shown.map((s, i) => {
-          const isOpen = active === s.id;
-          return (
-            <li key={s.id} className="border-b border-line">
-              <button className="group flex w-full items-center gap-4 py-5 text-left md:gap-6 md:py-6" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : s.id)}>
-                <span className="w-8 shrink-0 text-sm tabular-nums text-muted">{String(i + 1).padStart(2, "0")}</span>
-                <span className="flex-1">
-                  <span className={`display block text-2xl transition-transform duration-300 md:text-3xl ${isOpen ? "" : "group-hover:translate-x-1"}`}>{s.title}</span>
-                  <span className="eyebrow mt-1 block">{s.category}</span>
-                </span>
-                <span aria-hidden="true" className={`grid size-10 shrink-0 place-items-center rounded-full border border-line text-xl transition duration-300 ${isOpen ? "rotate-45 border-brand-600 bg-brand-600 text-white" : "group-hover:border-brand-600"}`}>+</span>
-              </button>
-              <Collapse open={isOpen}>
-                <div className="pb-6 pl-12 pr-2 md:pl-14 md:pr-16">
-                  <img src={`/photos/${PHOTOS[items.indexOf(s) % PHOTOS.length][0]}-500.jpg`} alt="" loading="lazy" className="mb-4 aspect-[16/9] w-full rounded-2xl object-cover lg:hidden" />
-                  <p className="max-w-xl text-muted">{s.description}</p>
-                  <Link to={`/book?service=${s.id}`} className="btn mt-4">Request this service <span aria-hidden="true">→</span></Link>
-                </div>
-              </Collapse>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
   );
 }
 
@@ -153,7 +184,7 @@ function Visit() {
           ))}
         </ol>
       </div>
-      <div className="flex flex-col justify-between rounded-3xl bg-surface p-8 md:p-12">
+      <div className="flex flex-col justify-between rounded-3xl bg-surface p-8 shadow-[0_24px_60px_-28px_rgb(31_38_28/0.35)] md:p-12">
         <div key={step} className="swap">
           <span className="display text-[8rem] leading-none text-brand-600/20 md:text-[11rem]" aria-hidden="true">{step + 1}</span>
           <p className="display -mt-4 text-3xl md:text-4xl">{STEPS[step][0]}</p>
@@ -234,15 +265,14 @@ export function Home() {
       <Hero />
       <Statement />
       <Section><Availability /></Section>
-      <Section tone="surface">
-        <Fetched state={services}>{services.data && <ServicesExplorer items={services.data} />}</Fetched>
-      </Section>
+      <Section tone="surface"><Fetched state={services}>{services.data && <ServiceGallery items={services.data} />}</Fetched></Section>
       <Section title="The people you’ll meet.">
         <Fetched state={doctors}>
-          <div className="grid gap-5 md:grid-cols-3">{doctors.data?.map((d) => <DoctorCard key={d.id} d={d} />)}</div>
+          <Rail label="Doctors">{doctors.data?.map((d) => <DoctorCard key={d.id} d={d} />)}</Rail>
         </Fetched>
       </Section>
-      <Section tone="surface"><Visit /></Section>
+      <Section tone="surface"><Testimonials /></Section>
+      <Section><Visit /></Section>
       <Section tone="brand"><Hours /></Section>
       <Section><Faq /></Section>
     </>

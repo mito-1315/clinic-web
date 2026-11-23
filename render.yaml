@@ -4,6 +4,7 @@ services:
     name: clinic-api
     runtime: docker
     plan: free
+    region: singapore # closest Render region to Chennai; create the Neon database in Singapore too
     healthCheckPath: /api/v1/health
     envVars:
       - key: DATABASE_URL
@@ -12,3 +13,7 @@ services:
         generateValue: true
       - key: CORS_ORIGIN
         sync: false # your Vercel URL, e.g. https://your-site.vercel.app
+      - key: ENABLE_DOCS
+        value: "true" # the portfolio demo shows its API docs; set to false (or remove) for a real clinic
+      - key: CRON_SECRET
+        generateValue: true # lets an outside pinger call /api/v1/cron/reminders when the free host sleeps

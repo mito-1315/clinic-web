@@ -5,9 +5,9 @@ import { PageHead, Section } from "./parts";
 import { SlotPicker } from "./live";
 import { nowIST, telHref, usePageTitle, useSite, waHref } from "./site";
 
-type Form = { patientName: string; phone: string; patientType: "CHILD" | "ADULT"; age: string; preferredDate: string; preferredSlot: "Morning" | "Evening"; serviceId: string; note: string; consent: boolean; website: string };
+type Form = { patientName: string; phone: string; patientType: "CHILD" | "ADULT"; age: string; preferredDate: string; preferredSlot: "Morning" | "Evening"; serviceId: string; note: string; consent: boolean; remind: boolean; website: string };
 
-const empty: Form = { patientName: "", phone: "", patientType: "CHILD", age: "", preferredDate: "", preferredSlot: "Morning", serviceId: "", note: "", consent: false, website: "" };
+const empty: Form = { patientName: "", phone: "", patientType: "CHILD", age: "", preferredDate: "", preferredSlot: "Morning", serviceId: "", note: "", consent: false, remind: true, website: "" };
 
 export function Book() {
   usePageTitle("Request appointment");
@@ -41,7 +41,7 @@ export function Book() {
         body: {
           patientName: f.patientName.trim(), phone: f.phone, patientType: f.patientType, age: Number(f.age), preferredDate: f.preferredDate,
           preferredSlot: f.preferredSlot, ...(f.serviceId && { serviceId: Number(f.serviceId) }), ...(f.note.trim() && { note: f.note.trim() }),
-          consent: true, website: f.website,
+          consent: true, wantsReminder: f.remind, website: f.website,
         },
       });
       setDone(r);
@@ -142,6 +142,11 @@ export function Book() {
             </label>
             {err("consent")}
           </div>
+
+          <label className="flex items-start gap-3">
+            <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-brand-600" checked={f.remind} onChange={(e) => set("remind", e.target.checked)} />
+            <span className="text-sm text-ink">Send me a WhatsApp reminder the day before, once the clinic confirms my visit.</span>
+          </label>
 
           {formErr && !Object.keys(errors).length && <p className="text-sm text-red-700" role="alert">{formErr}</p>}
           <button className="btn btn-primary min-h-12 w-full text-base" disabled={busy}>{busy ? "Sending…" : "Send request"}</button>

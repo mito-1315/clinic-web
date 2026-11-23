@@ -4,7 +4,7 @@ export const STATUS_STYLE: Record<string, string> = {
   NEW: "bg-sun-100 text-amber-800",
   CONFIRMED: "bg-brand-100 text-brand-700",
   CANCELLED: "bg-red-100 text-red-700",
-  COMPLETED: "bg-sky-100 text-sky-800",
+  COMPLETED: "bg-sun-100 text-stone-700",
 };
 
 export const Badge = ({ status }: { status: string }) => (

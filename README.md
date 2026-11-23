@@ -14,6 +14,40 @@ Full requirements: [docs/SRS.md](docs/SRS.md).
 - **Admin overview:** auto-refreshing counts, a 7-day chart and a "new request just arrived" alert.
 - **API status chip** in the site footer calls `GET /api/v1/health`.
 
+## Notifications and reminders
+- **Staff alerts:** every new request is sent to the clinic by **WhatsApp and email** together (channels can be switched off in admin, **Alerts**).
+- **Patient messages:** confirming or cancelling a request messages the patient on WhatsApp. Patients who tick "remind me" get a reminder the day before a confirmed visit.
+- **Manual tools in admin:** "WhatsApp them" (opens a prefilled chat, no account needed), "Send reminder", "Send test alert" and "Send tomorrow's reminders now".
+- **Providers (all optional):** without keys, messages are recorded as "Not sent (demo)" so the flow is visible. Set the keys below on the API host to send for real. Twilio covers WhatsApp; Resend covers email. Never commit these.
+
+| Name | Purpose |
+|---|---|
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Twilio login |
+| `TWILIO_WHATSAPP_FROM` | e.g. `whatsapp:+14155238886` (Twilio sandbox or approved sender) |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Email sending |
+| `NOTIFY_PHONE`, `NOTIFY_EMAIL` | Fallback staff contacts (admin Alerts page overrides them) |
+| `CRON_SECRET` | Lets an outside pinger call `GET /api/v1/cron/reminders` (header `x-cron-key`) when a free host sleeps |
+
+Reminders also run on an in-app timer every 30 minutes between 9 AM and 8 PM IST.
+
+## Security
+- **Sessions:** 4-hour tokens (HS256) kept in the browser tab only; a token stops working when the password changes or the account is deleted.
+- **Lockout:** 5 wrong passwords lock an account for 15 minutes (the public demo account is exempt). Login and booking are also rate-limited per IP.
+- **Booking abuse:** one open request per phone per day, at most 3 open per phone, 30 requests per IP per day. Cancelling a fake request frees its slot.
+- **Roles:** `STAFF` can work on appointment requests; `ADMIN` also edits the site, settings and alerts.
+- **Demo account:** in production it cannot change alert targets or send messages. Set `DISABLE_DEMO_LOGIN=true` once the site is for a real clinic.
+- **API docs:** on in development; in production only when `ENABLE_DOCS=true`.
+- **Browser hardening:** `apps/web/vercel.json` sets a strict Content-Security-Policy. If your API is not on `onrender.com`, change `connect-src` there.
+- **Retention:** requests and message logs are deleted after 90 days.
+
+Generate a signing secret and create a real admin (nothing is stored in git):
+```bash
+bash scripts/gen-jwt-secret.sh --write          # new random HS256 secret into apps/api/.env (not printed)
+bash scripts/gen-jwt-secret.sh                  # or print one to paste into Render's Environment tab
+npm run admin:create -- owner@clinic.com "Dr. Lakshmi"   # prints a random one-time password in your terminal
+```
+Security tests: `NODE_ENV=test npm test -w apps/api` (see `apps/api/tests/security.test.ts`).
+
 ## Demo login (fake data only)
 `admin@demo.clinic` / `Demo@12345`
 
@@ -41,25 +75,24 @@ Dockerfile API image (build from repo root)
 ```
 
 ## Deploy (free tiers)
-Create the accounts under a separate demo "owner" login, then invite yourself as collaborator.
+Neon (database) + Render (API in Docker) + Vercel (website), all under one owner account, with you as a GitHub collaborator so that `git push` redeploys everything. **Full step-by-step guide: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).**
 
-1. **Database: Neon.** Create a project, copy the connection string.
-2. **Seed it once from your machine** (set `DATABASE_URL` to the Neon string for this command only, never commit it):
-   `DATABASE_URL="<neon url>" npx prisma migrate deploy --schema apps/api/prisma/schema.prisma` then `DATABASE_URL="<neon url>" npm run db:seed`
-3. **API: Render.** New Blueprint from this repo (uses `render.yaml`), or a Docker web service. Set `DATABASE_URL` (Neon) and `CORS_ORIGIN` (your Vercel URL). `JWT_SECRET` is generated for you. The free plan sleeps when idle, so the first request can take about 30 seconds.
-4. **Web: Vercel.** Import the repo, set root directory `apps/web`, and add env var `VITE_API_URL` = your Render URL (no trailing slash). SPA routing is handled by `apps/web/vercel.json`.
-5. Check `<render-url>/api/v1/health`, then open the Vercel URL and log in to `/admin`.
+Short version: push to the owner's GitHub repo; create a Neon database and run `npm run db:deploy` once with its address; create the Render service from `render.yaml` (set `DATABASE_URL`, `CORS_ORIGIN`); import `apps/web` in Vercel with `VITE_API_URL` set to the Render address; then set Render's `CORS_ORIGIN` to the Vercel address.
 
 ### Environment variables
 | Where | Name | Purpose |
 |---|---|---|
 | API | `DATABASE_URL` | Postgres connection string |
-| API | `JWT_SECRET` | Signs login tokens (required in production) |
-| API | `CORS_ORIGIN` | Allowed web origin(s), comma separated |
-| Web | `VITE_API_URL` | API base URL (empty in local dev, which uses the Vite proxy) |
+| API | `JWT_SECRET` | Signs login tokens, 32+ random characters (Render generates it; or `bash scripts/gen-jwt-secret.sh`) |
+| API | `CORS_ORIGIN` | Allowed website address(es), comma separated |
+| API | `ENABLE_DOCS` | `true` to serve `/api/docs` in production |
+| API | `CRON_SECRET` | Key for the reminder ping URL (Render generates it) |
+| API | `DISABLE_DEMO_LOGIN` | `true` once the site is for a real clinic |
+| API | `TWILIO_*`, `RESEND_API_KEY`, `EMAIL_FROM`, `NOTIFY_*` | Optional messaging (see Notifications above) |
+| Web | `VITE_API_URL` | API base URL, no trailing slash (empty in local dev, which uses the Vite proxy) |
 
 ## Privacy and scope
 Appointment requests store only name, mobile number, patient type, age, preferred date and time, and an optional non-medical note, with a consent tick. No medical records.
 
 ## Not built yet (see SRS)
-Image upload, two opening sessions per day, Tamil language toggle, AI chat assistant.
+Tamil language toggle, AI chat assistant.

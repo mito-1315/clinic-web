@@ -60,7 +60,7 @@ export function WordReveal({ text, className = "" }: { text: string; className?:
     <p ref={ref} className={className}>
       <span className="sr-only">{text}</span>
       {words.map((w, i) => (
-        <span key={i} aria-hidden="true" className="transition-colors duration-300" style={{ color: i < lit ? "var(--color-ink)" : "rgb(11 47 54 / 0.45)" }}>
+        <span key={i} aria-hidden="true" className="transition-colors duration-300" style={{ color: i < lit ? "var(--color-ink)" : "rgb(31 38 28 / 0.45)" }}>
           {w}{" "}
         </span>
       ))}
@@ -75,4 +75,64 @@ export function Collapse({ open, children }: { open: boolean; children: React.Re
       <div className="overflow-hidden" inert={!open}>{children}</div>
     </div>
   );
+}
+
+/** Fades a block up once when it scrolls into view. */
+export function useReveal<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") { el.classList.add("in"); return; }
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting || e.boundingClientRect.top < 0) { el.classList.add("in"); io.disconnect(); } }, { threshold: 0.08 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return ref;
+}
+
+/** Subtle 3D tilt toward the pointer (mouse only). Returns ref + handlers. */
+export function useTilt<T extends HTMLElement>(max = 6) {
+  const ref = useRef<T>(null);
+  const on = (e: React.PointerEvent) => {
+    const el = ref.current;
+    if (!el || e.pointerType !== "mouse" || reducedMotion()) return;
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+    el.classList.remove("idle");
+    el.style.setProperty("--ry", `${x * max * 2}deg`);
+    el.style.setProperty("--rx", `${-y * max * 2}deg`);
+  };
+  const off = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.classList.add("idle");
+    el.style.setProperty("--ry", "0deg"); el.style.setProperty("--rx", "0deg");
+  };
+  return { ref, onPointerMove: on, onPointerLeave: off };
+}
+
+/** Moves every [data-parallax="k"] element at its own speed with GSAP ScrollTrigger (k = fraction of the scroll distance). */
+export function useParallaxLayers(dep: unknown) {
+  useEffect(() => {
+    if (reducedMotion()) return;
+    let kill = () => {};
+    let off = false;
+    (async () => {
+      const [{ gsap }, { ScrollTrigger }] = await Promise.all([import("gsap"), import("gsap/ScrollTrigger")]);
+      if (off) return;
+      gsap.registerPlugin(ScrollTrigger);
+      const ctx = gsap.context(() => {
+        document.querySelectorAll<HTMLElement>("[data-parallax]").forEach((el) => {
+          const host = el.parentElement;
+          if (!host) return;
+          const k = parseFloat(el.dataset.parallax || "0");
+          const d = () => (window.innerHeight + host.offsetHeight) / 2 * k;
+          gsap.fromTo(el, { y: () => d() }, { y: () => -d(), ease: "none", scrollTrigger: { trigger: host, start: "top bottom", end: "bottom top", scrub: 0.6, invalidateOnRefresh: true } });
+        });
+      });
+      kill = () => ctx.revert();
+    })();
+    return () => { off = true; kill(); };
+  }, [dep]);
 }

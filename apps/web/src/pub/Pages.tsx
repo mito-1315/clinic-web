@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
 import { useApi } from "../api";
-import { WordReveal, useParallax } from "./motion";
-import { BookCta, DoctorCard, Fetched, PageHead, Section, ServiceCard, TimingsTable } from "./parts";
+import { WordReveal, useParallax, useReveal } from "./motion";
+import { BookCta, DoctorCard, Fetched, PageHead, Rail, Section, ServiceCard, TimingsTable } from "./parts";
 import { telHref, usePageTitle, useSite, waHref } from "./site";
 
 export function About() {
   usePageTitle("About");
   const img = useParallax<HTMLImageElement>(0.1);
+  const mr = useReveal<HTMLDivElement>();
   return (
     <>
       <PageHead title="A clinic built on patience." intro="A neighbourhood clinic in Kundrathur, run by two doctors who wanted families to have a caring place close to home." />
@@ -18,12 +19,12 @@ export function About() {
       </Section>
       <Section tone="surface">
         <div className="grid items-center gap-12 lg:grid-cols-2">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] bg-brand-100">
+          <div ref={mr} className="mask-reveal relative aspect-[4/5] overflow-hidden bg-brand-100 shadow-2xl">
             <img ref={img} src="/photos/smile-960.jpg" alt="A doctor in teal scrubs smiling while checking a child’s throat" loading="lazy" className="size-full object-cover" />
           </div>
           <div>
             <h2 className="display text-4xl md:text-5xl">Recognition and memberships</h2>
-            <p className="mt-2 text-sm text-muted">Sample content for this demo.</p>
+            
             <ul className="mt-8 divide-y divide-line border-y border-line">
               {["Active member of a state paediatric association", "Community vaccination camps for local schools", "Invited speaker at regional medical education meetings", "Long-standing referral relationships with specialists across Chennai"].map((x, i) => (
                 <li key={x} className="flex gap-5 py-5"><span className="display text-2xl text-brand-500">{String(i + 1).padStart(2, "0")}</span><span className="text-lg">{x}</span></li>
@@ -47,24 +48,19 @@ export function About() {
 export function Services() {
   usePageTitle("Services");
   const state = useApi<any[]>("/services");
-  const groups = new Map<string, any[]>();
-  state.data?.forEach((s) => groups.set(s.category, [...(groups.get(s.category) ?? []), s]));
   return (
     <>
       <PageHead title="Our services." intro="Care for children and adults, all under one roof." />
       <Section>
         <Fetched state={state}>
-          {[...groups].map(([cat, items]) => (
-            <div key={cat} className="mb-14 grid gap-6 lg:grid-cols-[1fr_3fr]">
-              <h2 className="display text-3xl text-brand-600">{cat}</h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {items.map((s) => (
-                  <Link key={s.id} to={`/book?service=${s.id}`} className="block"><ServiceCard s={s} /></Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </Fetched>
+          <div className="grid auto-rows-[minmax(12rem,auto)] gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {state.data?.map((sv, i) => (
+              <Link key={sv.id} to={`/book?service=${sv.id}`} className={`block ${i === 0 ? "sm:col-span-2 lg:row-span-2" : i === 3 ? "lg:col-span-2" : ""}`}>
+                <ServiceCard s={sv} big={i === 0} />
+              </Link>
+            ))}
+          </div>
+          </Fetched>
         <BookCta className="min-h-14 px-7 text-base" />
       </Section>
     </>
@@ -76,10 +72,10 @@ export function Doctors() {
   const state = useApi<any[]>("/doctors");
   return (
     <>
-      <PageHead title="Doctors and team." intro="Experienced doctors and a caring nursing team. Profiles are sample content." />
+      <PageHead title="Doctors and team." intro="Experienced doctors and a caring nursing team." />
       <Section>
         <Fetched state={state}>
-          <div className="grid gap-5 md:grid-cols-3">{state.data?.map((d) => <DoctorCard key={d.id} d={d} />)}</div>
+          <Rail label="Doctors">{state.data?.map((d) => <DoctorCard key={d.id} d={d} />)}</Rail>
         </Fetched>
         <div className="mt-8 rounded-3xl bg-surface p-8 md:p-10">
           <h2 className="display text-3xl">Nursing team</h2>
@@ -119,7 +115,7 @@ export function Contact() {
           <div>
             <iframe title="Map of Kundrathur, Chennai (approximate)" loading="lazy" className="h-96 w-full rounded-3xl border border-line lg:h-full lg:min-h-[34rem]"
               src="https://www.openstreetmap.org/export/embed.html?bbox=80.085%2C12.990%2C80.110%2C13.008&layer=mapnik&marker=12.9985%2C80.0985" />
-            <p className="mt-2 text-xs text-muted">Kundrathur area, approximate sample location. Map by OpenStreetMap contributors.</p>
+            <p className="mt-2 text-xs text-muted">Kundrathur area, approximate location. Map by OpenStreetMap contributors.</p>
           </div>
         </div>
       </Section>

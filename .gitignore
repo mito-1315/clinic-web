@@ -4,3 +4,7 @@ dist
 *.log
 .DS_Store
 .taste-skill/
+.agents/
+.claude/
+skills-lock.json
+.vercel

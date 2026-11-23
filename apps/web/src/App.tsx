@@ -6,6 +6,7 @@ import { Appointments } from "./admin/Appointments";
 import { ContentManager } from "./admin/ContentManager";
 import { Timings } from "./admin/Timings";
 import { Settings } from "./admin/Settings";
+import { Notifications } from "./admin/Notifications";
 import { announcementConfig, doctorConfig, serviceConfig } from "./admin/configs";
 import { PublicLayout } from "./pub/PublicLayout";
 import { Home } from "./pub/Home";
@@ -31,9 +32,10 @@ export function App() {
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Overview />} />
         <Route path="appointments" element={<Appointments />} />
-        <Route path="services" element={<ContentManager {...serviceConfig} />} />
-        <Route path="doctors" element={<ContentManager {...doctorConfig} />} />
-        <Route path="announcements" element={<ContentManager {...announcementConfig} />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="services" element={<ContentManager key="services" {...serviceConfig} />} />
+        <Route path="doctors" element={<ContentManager key="doctors" {...doctorConfig} />} />
+        <Route path="announcements" element={<ContentManager key="notices" {...announcementConfig} />} />
         <Route path="timings" element={<Timings />} />
         <Route path="settings" element={<Settings />} />
       </Route>

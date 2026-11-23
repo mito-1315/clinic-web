@@ -92,6 +92,16 @@ function Detail({ a, onClose, onSaved }: { a: Appt; onClose: () => void; onSaved
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
+  const [sent, setSent] = useState("");
+  async function remind() {
+    setBusy(true); setErr(""); setSent("");
+    try { await api(`/admin/appointments/${a.id}/remind`, { method: "POST" }); setSent("Reminder sent ✓ (see Alerts for delivery)"); }
+    catch (e) { setErr(errMsg(e)); }
+    setBusy(false);
+  }
+  const waText = encodeURIComponent(`Hello ${a.patientName}, this is Lakshmi Child Care Center about your request ${a.refCode} for ${fmtDate(a.preferredDate)} (${a.preferredSlot}).`);
+  const waLink = `https://wa.me/${a.phone.replace(/\D/g, "").replace(/^(\d{10})$/, "91$1")}?text=${waText}`;
+
   async function save() {
     setBusy(true); setErr("");
     try {
@@ -125,7 +135,13 @@ function Detail({ a, onClose, onSaved }: { a: Appt; onClose: () => void; onSaved
       <textarea id="sn" className="input" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
 
       {err && <p className="mt-3 text-sm text-red-700" role="alert">{err}</p>}
+      {sent && <p className="mt-3 text-sm text-brand-700" role="status">{sent}</p>}
+      <p className="mt-3 text-xs text-stone-500">Setting a request to Confirmed or Cancelled messages the patient automatically.</p>
       <button className="btn btn-primary mt-4 w-full" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save changes"}</button>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <a className="btn" href={waLink} target="_blank" rel="noreferrer">WhatsApp them</a>
+        <button className="btn" disabled={busy} onClick={remind}>Send reminder</button>
+      </div>
     </Sheet>
   );
 }
